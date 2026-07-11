@@ -1,0 +1,2842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ProQuant Terminal v5 | Scalper Edition</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#080A0F">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base: #080A0F; --bg-panel: #11141D; --bg-hover: #191E2B;
+    --border: #232A3B; --border-light: #2D364A;
+    --text-main: #D1D4DC; --text-muted: #787B86; --text-faint: #4E5363;
+    --accent: #2962FF; --accent-hover: #1E53E5; --accent-dim: rgba(41, 98, 255, 0.15);
+    --bull: #089981; --bull-dim: rgba(8, 153, 129, 0.12);
+    --bear: #F23645; --bear-dim: rgba(242, 54, 69, 0.12);
+    --warn: #E8A81E; --warn-dim: rgba(232, 168, 30, 0.12);
+    --gold: #C9A227;
+    --font-sans: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg-base); color: var(--text-main); font-family: var(--font-sans); font-size: 12px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; -webkit-font-smoothing: antialiased; }
+
+  /* HEADER */
+  header { height: 54px; background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand svg { width: 22px; height: 22px; color: var(--accent); }
+  .brand h1 { font-size: 15px; font-weight: 700; color: #FFF; letter-spacing: 0.5px;}
+  .brand h1 span { color: var(--accent); }
+
+  .header-metrics { display: flex; align-items: center; gap: 20px; font-family: var(--font-mono); font-size: 11px; }
+  .metric { display: flex; flex-direction: column; gap: 2px; }
+  .metric-label { font-family: var(--font-sans); font-size: 9px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;}
+  .metric-value { color: #FFF; font-weight: 600;}
+  .session-badge { padding: 5px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; border: 1px solid var(--border-light); }
+  .session-badge.prime { background: var(--bull-dim); color: var(--bull); border-color: rgba(8,153,129,0.4); }
+  .session-badge.low { background: var(--bear-dim); color: var(--bear); border-color: rgba(242,54,69,0.4); }
+
+  /* LAYOUT */
+  .layout { display: flex; flex: 1; overflow: hidden; }
+  .sidebar { width: 270px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; overflow-y: auto;}
+  .panel-section { border-bottom: 1px solid var(--border); padding: 16px; }
+  .panel-title { font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 12px; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center;}
+
+  /* CONTROLS */
+  .row-buttons { display: flex; gap: 8px; margin-bottom: 12px; }
+  .btn { flex: 1; background: var(--accent); color: #FFF; border: none; padding: 12px; border-radius: 4px; font-family: var(--font-sans); font-weight: 600; font-size: 12px; cursor: pointer; transition: 0.15s; display: flex; justify-content: center; align-items: center; gap:6px;}
+  .btn:hover { background: var(--accent-hover); }
+  .btn:disabled { background: var(--bg-hover); color: var(--text-faint); cursor: not-allowed; }
+  .btn-auto { width: 44px; background: var(--bg-hover); border: 1px solid var(--border-light); color: var(--text-muted); border-radius: 4px; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+  .btn-auto.active { background: var(--bull-dim); border-color: var(--bull); color: var(--bull); }
+
+  .toggle-group { display: flex; background: var(--bg-base); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .toggle-opt { flex: 1; text-align: center; padding: 7px 0; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+  .toggle-opt.active { background: var(--accent-dim); color: var(--accent); }
+
+  .hint { font-size: 9px; color: var(--text-faint); margin-top: 8px; line-height: 1.5; }
+  kbd { background: var(--bg-hover); border: 1px solid var(--border-light); border-radius: 3px; padding: 1px 5px; font-family: var(--font-mono); }
+
+  /* TABS */
+  .desk-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-panel); }
+  .desk-tab { flex: 1; padding: 12px; text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
+  .desk-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--accent-dim); }
+
+  /* MAIN AREA */
+  .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-base); }
+
+  .view-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; display: none; }
+  .view-container.active { display: flex; }
+
+  .summary-matrix { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; padding: 16px; border-bottom: 1px solid var(--border); }
+  .sum-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 4px; padding: 12px; }
+  .sum-head { font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .sum-list { font-family: var(--font-mono); font-size: 11px; color: var(--text-main); line-height: 1.6; }
+  .sum-list span { cursor: pointer; text-decoration: underline; text-decoration-color: var(--border-light); margin-right: 6px; }
+  .sum-list span:hover { color: #FFF; }
+
+  .table-wrapper { flex: 1; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
+  thead { position: sticky; top: 0; z-index: 5; background: var(--bg-hover); }
+  th { padding: 10px 14px; font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .mono { font-family: var(--font-mono); }
+  .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+  .bg-bull { background: var(--bull-dim); color: var(--bull); border: 1px solid rgba(8,153,129,0.3); }
+  .bg-bear { background: var(--bear-dim); color: var(--bear); border: 1px solid rgba(242,54,69,0.3); }
+  .bg-wait { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(232,168,30,0.3); }
+  .bg-avoid { background: var(--border); color: var(--text-muted); border: 1px solid var(--border-light); }
+
+  /* EXECUTION DESK */
+  .exec-layout { display: flex; flex: 1; overflow: hidden; }
+  .chart-pane { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); min-width:0; }
+  .side-pane { width: 320px; flex-shrink:0; display: flex; flex-direction: column; background: var(--bg-panel); overflow-y: auto; transition: width 0.25s ease, opacity 0.2s ease, padding 0.2s ease; }
+  .side-pane.collapsed { width: 0 !important; opacity:0; overflow:hidden; padding:0; border:none; }
+  .pane-resizer { width: 5px; flex-shrink:0; cursor: col-resize; background: var(--border); transition: background 0.15s; }
+  .pane-resizer:hover, .pane-resizer.dragging { background: var(--accent); }
+  .pane-resizer.hidden-resizer { display:none; }
+  .view-container { animation: fadeIn 0.18s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .oms-ticket, .session-card, .jstat-card { transition: border-color 0.15s ease, transform 0.15s ease; }
+  .oms-ticket:hover { border-color: var(--border-light); }
+
+  .pane-header { padding: 9px 14px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 700; color: #FFF; background: var(--bg-hover); text-transform: uppercase; display: flex; justify-content: space-between; align-items:center; flex-shrink:0;}
+  .conn-dot { width: 7px; height: 7px; border-radius: 50%; display:inline-block; margin-right:5px; background: var(--text-faint); }
+  .conn-dot.live { background: var(--bull); box-shadow: 0 0 6px var(--bull); }
+  .conn-dot.down { background: var(--bear); }
+  canvas { flex: 1; width: 100%; height: 100%; display: block; background: var(--bg-base); cursor: crosshair; }
+
+  .chart-toolbar { display:flex; gap:6px; padding:8px 14px; border-bottom:1px solid var(--border); background:var(--bg-panel); flex-shrink:0; }
+  .chart-toolbar .toggle-group { width: 140px; }
+
+  /* ORDER MANAGEMENT SYSTEM */
+  .oms-ticket { padding: 14px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+  .oms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .oms-field { display: flex; flex-direction: column; gap: 4px; font-family: var(--font-mono); }
+  .oms-lbl { font-family: var(--font-sans); font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+  .oms-val { font-size: 12px; font-weight: 700; color: #FFF; background: var(--bg-base); padding: 7px 8px; border: 1px solid var(--border); border-radius: 4px; }
+  .oms-note { font-size: 9px; color: var(--text-faint); line-height: 1.5; margin-top:8px; }
+
+  /* ORDER BOOK / DOM */
+  .dom-wrap { flex: 1; overflow-y: auto; font-family: var(--font-mono); font-size: 10.5px; min-height: 120px; }
+  .dom-row { position: relative; display: flex; justify-content: space-between; padding: 3px 14px; z-index:1; }
+  .dom-bar { position:absolute; top:0; bottom:0; right:0; z-index:-1; opacity:0.16; }
+  .dom-bar.ask { background: var(--bear); }
+  .dom-bar.bid { background: var(--bull); }
+  .dom-ask { color: var(--bear); }
+  .dom-bid { color: var(--bull); }
+  .dom-mid { padding: 6px 14px; text-align:center; font-weight:700; color:#FFF; background:var(--bg-base); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+
+  .tape-wrap { flex: 1; overflow-y: auto; background: var(--bg-base); padding: 4px 0; font-family: var(--font-mono); font-size: 11px; min-height:100px;}
+  .tape-row { display: flex; justify-content: space-between; padding: 3px 14px; }
+  .tape-row.buy { color: var(--bull); }
+  .tape-row.sell { color: var(--bear); }
+  .tape-row.flagged { font-weight: 700; }
+
+  /* SESSION ANALYTICS BAR */
+  .session-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:10px 14px; border-bottom:1px solid var(--border); background:var(--bg-panel); }
+  .session-card { background:var(--bg-base); border:1px solid var(--border); border-radius:4px; padding:8px 10px; }
+  .session-card.current { border-color:var(--accent); }
+  .session-card-head { font-size:9px; font-weight:700; color:var(--text-muted); letter-spacing:0.5px; display:flex; align-items:center; gap:5px; }
+  .session-card-body { font-family:var(--font-mono); font-size:11px; color:#FFF; margin-top:4px; line-height:1.5; }
+  .kz-dot { width:6px; height:6px; border-radius:50%; background:var(--border-light); display:inline-block; }
+  .kz-dot.active { background:var(--bull); box-shadow:0 0 6px var(--bull); }
+
+  /* ORDER FLOW */
+  .orderflow-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px; font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); background:var(--bg-base); border-bottom:1px solid var(--border); }
+  .flow-flag { font-weight:700; padding:2px 6px; border-radius:3px; font-size:9.5px; }
+  .flow-flag.absorption { color:var(--warn); background:var(--warn-dim); }
+  .flow-flag.iceberg { color:var(--accent); background:var(--accent-dim); }
+  .flow-flag.divergence { color:var(--bear); background:var(--bear-dim); }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg-base); }
+  ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+  /* TUNING SLIDERS */
+  .slider-row { margin-bottom: 12px; }
+  .slider-row label { display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-weight:700; margin-bottom:5px; text-transform:uppercase;}
+  .slider-row label b { color:#FFF; font-family:var(--font-mono); font-weight:700;}
+  .slider-row input[type=range] { width:100%; accent-color: var(--accent); }
+  .apply-note { font-size:9px; color:var(--warn); margin-top:2px; }
+
+  /* BACKTEST LAB */
+  .bt-controls { display:flex; gap:10px; padding:14px 16px; border-bottom:1px solid var(--border); align-items:flex-end; flex-wrap:wrap; }
+  .bt-field { display:flex; flex-direction:column; gap:5px; }
+  .bt-field label { font-size:9px; color:var(--text-muted); font-weight:700; text-transform:uppercase; }
+  .bt-field select { background:var(--bg-base); border:1px solid var(--border-light); color:#FFF; padding:8px; border-radius:4px; font-family:var(--font-mono); font-size:11px; }
+  .bt-summary { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; padding:16px; border-bottom:1px solid var(--border); }
+  .bt-card { background:var(--bg-panel); border:1px solid var(--border); border-radius:4px; padding:12px; }
+  .bt-card .lbl { font-size:9px; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-bottom:6px; }
+  .bt-card .val { font-family:var(--font-mono); font-size:17px; font-weight:700; color:#FFF; }
+  .bt-body { flex:1; display:flex; overflow:hidden; }
+  .bt-equity { flex:1; border-right:1px solid var(--border); display:flex; flex-direction:column; }
+  .bt-log { width:360px; overflow-y:auto; }
+
+  /* STRATEGY CONFLUENCE CHECKLIST */
+  .strat-item { border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; margin-bottom: 6px; background: var(--bg-base); }
+  .strat-item-head { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .strat-item-head span.name { font-size: 11px; font-weight: 700; color: var(--text-main); }
+  .strat-item-head input[type=checkbox] { accent-color: var(--accent); }
+  .strat-desc { font-size: 9.5px; color: var(--text-faint); line-height: 1.5; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); display: none; }
+  .strat-item.open .strat-desc { display: block; }
+  .strat-badge { display:inline-block; font-size:8.5px; font-weight:700; padding:1px 5px; border-radius:3px; margin-left:6px; background: var(--accent-dim); color: var(--accent); vertical-align: middle; }
+
+  /* SIGNAL TOASTS */
+  #toastStack { position: fixed; top: 62px; right: 14px; z-index: 999; display: flex; flex-direction: column; gap: 8px; width: 300px; pointer-events: none; }
+  .toast { pointer-events: auto; background: var(--bg-panel); border: 1px solid var(--border-light); border-left: 3px solid var(--accent); border-radius: 4px; padding: 10px 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); animation: toastIn 0.25s ease-out; cursor: pointer; }
+  .toast.long { border-left-color: var(--bull); }
+  .toast.short { border-left-color: var(--bear); }
+  .toast-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .toast-sym { font-weight: 700; color: #FFF; font-size: 12px; }
+  .toast-dir { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
+  .toast-reason { font-size: 10px; color: var(--text-muted); line-height: 1.4; }
+  .toast-fade { animation: toastOut 0.4s ease-in forwards; }
+  @keyframes toastIn { from { opacity:0; transform: translateX(20px);} to { opacity:1; transform: translateX(0);} }
+  @keyframes toastOut { from { opacity:1; } to { opacity:0; transform: translateX(20px);} }
+
+  /* JOURNAL */
+  .journal-toolbar { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .journal-toolbar label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); cursor: pointer; }
+  .journal-toolbar input[type=checkbox] { accent-color: var(--accent); }
+  .btn-sm { background: var(--bg-hover); border: 1px solid var(--border-light); color: var(--text-main); padding: 7px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+  .journal-empty { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+  .journal-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:0 16px 12px; }
+  .jstat-card { background:var(--bg-panel); border:1px solid var(--border); border-radius:6px; padding:12px 14px; }
+  .jstat-title { font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+  .jstat-row { display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:11px; padding:2px 0; }
+  .jr-expand-btn { background:none; border:1px solid var(--border-light); color:var(--text-muted); border-radius:3px; width:22px; height:22px; cursor:pointer; }
+  .jr-detail-row td { background:var(--bg-base); padding:12px 16px; }
+  .jr-detail-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  .jr-detail-field label { display:block; font-size:9px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px; }
+  .jr-detail-field textarea, .jr-detail-field select, .jr-detail-field input { width:100%; background:var(--bg-panel); border:1px solid var(--border); color:var(--text-main); border-radius:3px; padding:6px 8px; font-family:var(--font-mono); font-size:10.5px; }
+  .jr-detail-field textarea { min-height:50px; resize:vertical; }
+  .jr-shot { max-width:100%; border-radius:4px; border:1px solid var(--border); margin-top:6px; }
+  .jr-reason { width: 260px; min-width: 220px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); font-family: var(--font-sans); font-size: 10.5px; line-height: 1.5; border-radius: 3px; padding: 6px; resize: vertical; min-height: 56px; }
+  .jr-notes { width: 160px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); font-family: var(--font-sans); font-size: 10.5px; border-radius: 3px; padding: 6px; resize: vertical; min-height: 56px; }
+  .jr-outcome { background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); font-size: 10.5px; border-radius: 3px; padding: 5px; font-weight: 700; }
+  .jr-del { background: transparent; border: 1px solid var(--bear); color: var(--bear); border-radius: 4px; padding: 5px 8px; font-size: 10px; cursor: pointer; }
+  .jr-del:hover { background: var(--bear-dim); }
+  .bt-log table { width:100%; }
+  .bt-log th, .bt-log td { padding:7px 10px; font-size:10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+    <h1>Pro<span>Quant</span> v5 <span style="color:var(--text-muted); font-weight:500; font-size:11px;">Scalper Edition</span></h1>
+  </div>
+  <div class="header-metrics">
+    <div class="metric"><span class="metric-label">Session</span><span id="sessionBadge" class="session-badge">--</span></div>
+    <div class="metric"><span class="metric-label">System Time (UTC)</span><span class="metric-value" id="clock">00:00:00</span></div>
+    <div class="metric"><span class="metric-label">Data Feed</span><span class="metric-value" id="feedStatus" style="color:var(--bull)">● FUTURES REST</span></div>
+    <div class="metric"><span class="metric-label">Portfolio Balance (Mock)</span><span class="metric-value" style="color:var(--accent)">$100,000.00</span></div>
+  </div>
+</header>
+
+<div id="toastStack"></div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="panel-section">
+      <div class="row-buttons">
+        <button class="btn" id="btnScan">RUN MTF SCANNER</button>
+        <button class="btn-auto" id="btnAuto" title="Auto-Scan every 60s">⟳</button>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-family:var(--font-mono);">
+        <span id="scanStatus">Standby</span><span id="scanPercent">0%</span>
+      </div>
+      <div class="hint">Hotkeys: <kbd>S</kbd> scan &nbsp;<kbd>A</kbd> auto &nbsp;<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> tabs</div>
+      <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px; font-family:var(--font-mono); font-size:10.5px;">
+        <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+          <span>🔔 Auto-alert new LONG/SHORT</span>
+          <input type="checkbox" id="chkNotifySignals" checked style="accent-color:var(--accent);">
+        </label>
+        <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+          <span>🖥️ Browser push notification</span>
+          <input type="checkbox" id="chkBrowserNotif" style="accent-color:var(--accent);">
+        </label>
+        <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+          <span>📓 Auto-log signals to Journal</span>
+          <input type="checkbox" id="chkAutoJournal" style="accent-color:var(--accent);">
+        </label>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">
+        Telegram Alerts
+        <label style="display:flex; align-items:center; gap:5px; font-weight:400; text-transform:none; font-size:10px; cursor:pointer;">
+          <input type="checkbox" id="chkTelegram" style="accent-color:var(--accent);"> Enable
+        </label>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <input type="password" id="tgToken" placeholder="Bot token (from @BotFather)" class="oms-val" style="width:100%; font-size:10px; padding:7px 8px;">
+        <input type="text" id="tgChatId" placeholder="Chat ID" class="oms-val" style="width:100%; font-size:10px; padding:7px 8px;">
+        <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-family:var(--font-mono); font-size:10.5px;">
+          <span>📸 Include chart screenshot</span>
+          <input type="checkbox" id="chkTgScreenshot" checked style="accent-color:var(--accent);">
+        </label>
+        <button class="btn-sm" id="btnTgTest" style="width:100%;">Send Test Alert</button>
+      </div>
+      <div class="hint">Token/Chat ID are stored only in this browser tab's memory — never sent anywhere except directly to api.telegram.org. Create a bot via @BotFather, then message it once and use <a href="https://api.telegram.org/bot&lt;token&gt;/getUpdates" target="_blank" style="color:var(--accent);">getUpdates</a> to find your chat_id.</div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">Entry Timeframe (Execution)</div>
+      <div class="toggle-group" id="entryTfToggle">
+        <div class="toggle-opt" data-tf="1m">1M</div>
+        <div class="toggle-opt active" data-tf="5m">5M</div>
+        <div class="toggle-opt" data-tf="15m">15M</div>
+      </div>
+      <div class="hint">Bias: 4H &rarr; Structure: 15M &rarr; Entry: selected TF above. Scalp default = 5M.</div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">System Metrics</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div style="background:var(--bg-base); border:1px solid var(--border); padding:10px; border-radius:4px;">
+          <div style="font-size:9px; color:var(--text-muted); font-weight:700;">TOTAL ASSETS</div>
+          <div style="font-family:var(--font-mono); font-size:14px; font-weight:700; color:#FFF; margin-top:4px;" id="statTotal">0</div>
+        </div>
+        <div style="background:var(--bg-base); border:1px solid var(--border); padding:10px; border-radius:4px;">
+          <div style="font-size:9px; color:var(--text-muted); font-weight:700;">A+ SETUPS</div>
+          <div style="font-family:var(--font-mono); font-size:14px; font-weight:700; color:var(--bull); margin-top:4px;" id="statAPlus">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section" style="flex:1;">
+      <div class="panel-title">
+        Risk Parameters
+        <label style="display:flex; align-items:center; gap:5px; font-weight:400; text-transform:none; font-size:10px; cursor:pointer;">
+          <input type="checkbox" id="chkSound" checked style="accent-color:var(--accent);"> Alert sound
+        </label>
+      </div>
+      <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-main); line-height:2; margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between;"><span>Max Risk / Trade</span><span style="color:var(--warn)">1.00%</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Max Margin / Trade</span><span>$10,000</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>TP1 / TP2 (R)</span><span>1.2R / 2.5R</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>SMC Validation</span><span style="color:var(--bull)">STRICT, closed-candle only</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>MTF Alignment</span><span style="color:var(--bull)">REQUIRED</span></div>
+      </div>
+
+      <div class="slider-row">
+        <label>Score Threshold <b id="valThreshold">65</b></label>
+        <input type="range" id="sldThreshold" min="50" max="85" step="1" value="65">
+      </div>
+      <div class="slider-row">
+        <label>SL Buffer beyond OB (&times;ATR) <b id="valObBuf">0.30</b></label>
+        <input type="range" id="sldObBuf" min="0.10" max="0.80" step="0.05" value="0.30">
+      </div>
+      <div class="slider-row">
+        <label>SL Fallback (no OB, &times;ATR) <b id="valSlFallback">1.30</b></label>
+        <input type="range" id="sldSlFallback" min="0.80" max="2.00" step="0.05" value="1.30">
+        <div class="apply-note">Perubahan berlaku ke scan berikutnya. Uji dulu di Backtest Lab sebelum paper trading.</div>
+      </div>
+      <div class="panel-title" style="margin-top:16px;">Signal Quality Filters</div>
+      <div style="font-family:var(--font-mono); font-size:11px; line-height:2.1;">
+        <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+          <span>Volatility filter (min ATR%)</span>
+          <input type="checkbox" id="chkVolatility" checked style="accent-color:var(--accent);">
+        </label>
+        <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+          <span>Volume confirmation (&ge;1.25&times; avg)</span>
+          <input type="checkbox" id="chkVolume" checked style="accent-color:var(--accent);">
+        </label>
+        <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+          <span>Session gate (London/NY only)</span>
+          <input type="checkbox" id="chkSession" style="accent-color:var(--accent);">
+        </label>
+        <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+          <span>Circuit breaker (4 losses &rarr; cooldown)</span>
+          <input type="checkbox" id="chkBreaker" checked style="accent-color:var(--accent);">
+        </label>
+      </div>
+      <div class="hint">These narrow the sample to higher-conviction setups; they cannot guarantee wins. Always confirm with Backtest Lab before changing live scan behavior.</div>
+
+      <div class="panel-title" style="margin-top:16px;">
+        Institutional Confluence Strategies
+        <span class="strat-badge" title="Adds score when triggered">CONFLUENCE</span>
+      </div>
+      <div class="hint" style="margin-top:-4px; margin-bottom:10px;">Tap a strategy name to see why professional/institutional desks watch it. Each checked strategy adds to the score and prints its reason as a tag when triggered.</div>
+      <div id="strategyList"></div>
+
+      <div style="margin-top:16px; padding:10px; border:1px dashed var(--border-light); font-size:10px; color:var(--text-muted); line-height:1.5; border-radius:4px;">
+        <b>Execution Logic:</b> Bias from 4H. Structure S/R + liquidity checked on 15M. Order Blocks, FVGs &amp; liquidity sweeps verified on the entry timeframe (scalp = 1M/5M).
+      </div>
+      <div style="margin-top:10px; padding:10px; border:1px dashed var(--warn); background:var(--warn-dim); font-size:10px; color:var(--warn); line-height:1.5; border-radius:4px;">
+        This terminal reads public market data only. No broker/exchange account is connected and no orders are ever sent automatically. All sizing is informational — verify manually before trading.
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="desk-tabs">
+      <div class="desk-tab active" id="tabScreener">Alpha Screener &amp; Macro</div>
+      <div class="desk-tab" id="tabTerminal">Live Execution Desk</div>
+      <div class="desk-tab" id="tabRankings">Multi-Coin Ranking</div>
+      <div class="desk-tab" id="tabBacktest">Backtest Lab</div>
+      <div class="desk-tab" id="tabJournal">Trading Journal</div>
+    </div>
+
+    <div class="view-container active" id="viewScreener">
+      <div class="summary-matrix">
+        <div class="sum-card">
+          <div class="sum-head"><span style="color:var(--bull)">● PELUANG LONG</span> <span id="countLong" class="mono">0</span></div>
+          <div class="sum-list" id="listLong" style="color:var(--bull)">Awaiting Scan...</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-head"><span style="color:var(--bear)">● PELUANG SHORT</span> <span id="countShort" class="mono">0</span></div>
+          <div class="sum-list" id="listShort" style="color:var(--bear)">Awaiting Scan...</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-head"><span style="color:var(--text-muted)">● WAJIB DIHINDARI</span> <span id="countAvoid" class="mono">0</span></div>
+          <div class="sum-list" id="listAvoid">Awaiting Scan...</div>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table id="screenerTable">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Status / Bias</th>
+              <th>Regime</th>
+              <th>Grade</th>
+              <th>15M S/R Context</th>
+              <th>Funding</th>
+              <th>SMC Setup (Entry TF)</th>
+              <th>Trade Plan (Ent / SL / TP1)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="screenerBody">
+            <tr><td colspan="9" style="text-align:center; padding: 40px; color:var(--text-muted);">Initialize scanner to analyze market structure.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="view-container" id="viewTerminal">
+      <div class="exec-layout">
+        <div class="chart-pane">
+          <div class="pane-header"><span id="chartTitle">Select an Asset</span> <span><span class="conn-dot" id="klineDot"></span>NATIVE HTML5 SMC ENGINE — LIVE</span></div>
+          <div class="chart-toolbar">
+            <div class="toggle-group" id="chartTfToggle">
+              <div class="toggle-opt active" data-tf="1m">1M</div>
+              <div class="toggle-opt" data-tf="5m">5M</div>
+              <div class="toggle-opt" data-tf="15m">15M</div>
+            </div>
+            <div style="margin-left:auto; font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:flex; align-items:center; gap:10px;">
+              <span>Spread: <b id="spreadVal" style="color:#FFF;">--</b></span>
+              <span>OI: <b id="oiVal" style="color:#FFF;">--</b></span>
+              <span>Funding: <b id="fundVal" style="color:#FFF;">--</b></span>
+              <button class="btn-sm" id="btnFocusMode" style="padding:5px 9px; font-size:9.5px;" title="Hide the side panel for a full-width chart">⛶ Focus</button>
+            </div>
+          </div>
+          <div class="session-bar" id="sessionBar">
+            <div class="session-card" data-sess="asia"><div class="session-card-head">ASIA <span class="kz-dot" id="kzAsia"></span></div><div class="session-card-body">--</div></div>
+            <div class="session-card" data-sess="london"><div class="session-card-head">LONDON <span class="kz-dot" id="kzLondon"></span></div><div class="session-card-body">--</div></div>
+            <div class="session-card" data-sess="ny"><div class="session-card-head">NEW YORK <span class="kz-dot" id="kzNy"></span></div><div class="session-card-body">--</div></div>
+            <div class="session-card" data-sess="live"><div class="session-card-head">SESSION VWAP</div><div class="session-card-body" id="sessVwapVal">--</div></div>
+          </div>
+          <canvas id="smcChart"></canvas>
+        </div>
+        <div class="pane-resizer" id="paneResizer"></div>
+        <div class="side-pane" id="sidePane">
+          <div class="oms-ticket">
+            <div class="pane-header" style="margin:-14px -14px 14px; border-radius:0;">Market Regime</div>
+            <div id="regimePanel" style="font-family:var(--font-mono); font-size:11px; line-height:1.7;">
+              <div style="color:var(--text-muted);">Run scanner to classify regime...</div>
+            </div>
+          </div>
+          <div class="oms-ticket">
+            <div class="pane-header" style="margin:-14px -14px 14px; border-radius:0;">Institutional Probability Engine</div>
+            <div id="probPanel" style="font-family:var(--font-mono); font-size:11px; line-height:1.7;">
+              <div style="color:var(--text-muted);">Run scanner to generate a probability read...</div>
+            </div>
+          </div>
+          <div class="oms-ticket">
+            <div class="pane-header" style="margin:-14px -14px 14px; border-radius:0;">Order Manager (OMS)</div>
+            <div class="oms-grid">
+              <div class="oms-field"><span class="oms-lbl">Action</span><span class="oms-val" id="omsAction" style="text-align:center;">--</span></div>
+              <div class="oms-field"><span class="oms-lbl">Risk % ($1,000)</span><span class="oms-val" id="omsRisk" style="text-align:center; color:var(--warn)">1.00%</span></div>
+              <div class="oms-field"><span class="oms-lbl">Entry Price</span><span class="oms-val" id="omsEnt">0.00</span></div>
+              <div class="oms-field"><span class="oms-lbl">Stop Loss</span><span class="oms-val" id="omsSl">0.00</span></div>
+              <div class="oms-field"><span class="oms-lbl">TP1 (1.2R) / TP2 (2.5R)</span><span class="oms-val" id="omsTp" style="font-size:10.5px;">--</span></div>
+              <div class="oms-field"><span class="oms-lbl">Pos Size (USD)</span><span class="oms-val" id="omsSize">0.00</span></div>
+              <div class="oms-field"><span class="oms-lbl">Req. Leverage</span><span class="oms-val" id="omsLev">1x</span></div>
+              <div class="oms-field"><span class="oms-lbl">Margin Required</span><span class="oms-val" id="omsMargin">--</span></div>
+              <div class="oms-field"><span class="oms-lbl">Est. Fees (open+close)</span><span class="oms-val" id="omsFees">--</span></div>
+              <div class="oms-field"><span class="oms-lbl">Est. Liquidation Price</span><span class="oms-val" id="omsLiq">--</span></div>
+              <div class="oms-field"><span class="oms-lbl">Max Safe Position</span><span class="oms-val" id="omsMaxSafe">--</span></div>
+              <div class="oms-field"><span class="oms-lbl">Breakeven Trigger</span><span class="oms-val" id="omsBe" style="font-size:10.5px;">--</span></div>
+            </div>
+            <div id="omsSafetyNote" class="oms-note" style="display:none;"></div>
+            <button class="btn" style="width:100%; opacity:0.5; cursor:not-allowed;">EXECUTE TO BROKER (MOCK — NOT CONNECTED)</button>
+            <button class="btn-sm" style="width:100%; margin-top:8px;" onclick="JOURNAL.add(STATE.activeSymbol)">📓 Log This Setup to Trading Journal</button>
+            <div class="oms-note">Plan: take 50% off at TP1, move SL to entry, trail remainder toward TP2. No auto-execution — manual confirmation required.</div>
+          </div>
+          <div class="pane-header">Liquidity Heatmap (DOM) <span><span class="conn-dot" id="domDot"></span>Top 8</span></div>
+          <canvas id="domHeat" height="26" style="display:block; width:100%;"></canvas>
+          <div class="dom-wrap" id="domList">
+            <div style="padding:14px; text-align:center; color:var(--text-muted);">Awaiting active pair...</div>
+          </div>
+          <div class="pane-header">Order Flow / Trade Tape <span><span class="conn-dot" id="tapeDot"></span><span id="tapeDelta" class="mono">0.00</span></span></div>
+          <div class="orderflow-bar">
+            <span>CVD (session): <b id="cvdVal" class="mono">0.00</b></span>
+            <span id="flowFlag" class="flow-flag"></span>
+          </div>
+          <canvas id="cvdChart" height="34" style="display:block; width:100%;"></canvas>
+          <div class="tape-wrap" id="tapeList">
+            <div style="padding:14px; text-align:center; color:var(--text-muted);">Awaiting active pair...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view-container" id="viewRankings">
+      <div class="journal-toolbar">
+        <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);">Ranks scanned symbols by a weighted composite of institutional score, momentum, relative volume, liquidity and downside risk. Run the scanner first.</span>
+        <button class="btn-sm" id="btnRefreshRankings" style="margin-left:auto;">↻ Refresh Ranking</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Symbol</th><th>Dir</th><th>Regime</th><th>Grade</th>
+              <th>Inst. Score</th><th>Momentum</th><th>Rel. Volume</th><th>Liquidity (Vol×Px)</th>
+              <th>Risk (ATR%)</th><th>Composite Rank</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="rankingsBody">
+            <tr><td colspan="11" style="text-align:center; padding: 40px; color:var(--text-muted);">Run the scanner, then this fills automatically.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="view-container" id="viewBacktest">
+      <div class="bt-controls">
+        <div class="bt-field">
+          <label>Symbol</label>
+          <select id="btSymbol"></select>
+        </div>
+        <div class="bt-field">
+          <label>Entry Timeframe</label>
+          <select id="btTf">
+            <option value="1m">1M</option>
+            <option value="5m" selected>5M</option>
+            <option value="15m">15M</option>
+          </select>
+        </div>
+        <div class="bt-field">
+          <label>Lookback (candles)</label>
+          <select id="btLookback">
+            <option value="300">300</option>
+            <option value="500" selected>500</option>
+            <option value="800">800</option>
+            <option value="1200">1200</option>
+          </select>
+        </div>
+        <button class="btn" id="btnRunBacktest" style="max-width:200px;">RUN BACKTEST</button>
+        <button class="btn" id="btnMonteCarlo" disabled style="max-width:200px; background:var(--bg-hover); border:1px solid var(--border-light); color:var(--text-muted);" title="Reshuffle trade order 2000x to see how much of the result is luck">MONTE CARLO</button>
+        <button class="btn-sm" id="btnClearProbDb" title="Clears the win-rate/avg-R history the Institutional Probability Engine uses. Each backtest run you complete adds to that history.">Clear Probability History</button>
+        <span id="btStatus" class="mono" style="font-size:11px; color:var(--text-muted);">Idle</span>
+      </div>
+      <div class="hint" style="padding:0 16px 8px; margin:0;">Every backtest run here feeds the Institutional Probability Engine on the Execution Desk — its "Expected Win Rate" and "Expected Avg R" are real stats from your own runs, bucketed by score band + setup type, not a guess. Run backtests across your usual symbols/TFs to build that history up.</div>
+      <div id="mcPanel" style="display:none; margin:0 16px 12px; padding:10px 14px; border:1px dashed var(--border-light); border-radius:4px; font-family:var(--font-mono); font-size:11px; color:var(--text-main); line-height:1.8;"></div>
+      <div class="bt-summary">
+        <div class="bt-card"><div class="lbl">Total Trades</div><div class="val" id="btTotal">--</div></div>
+        <div class="bt-card"><div class="lbl">Win Rate</div><div class="val" id="btWinRate">--</div></div>
+        <div class="bt-card"><div class="lbl">Avg R / Trade</div><div class="val" id="btAvgR">--</div></div>
+        <div class="bt-card"><div class="lbl">Profit Factor</div><div class="val" id="btPF">--</div></div>
+        <div class="bt-card"><div class="lbl">Net R</div><div class="val" id="btNetR">--</div></div>
+        <div class="bt-card"><div class="lbl">Max Consec. Loss</div><div class="val" id="btMaxLoss">--</div></div>
+      </div>
+      <div class="bt-body">
+        <div class="bt-equity">
+          <div class="pane-header">Equity Curve (Cumulative R)</div>
+          <canvas id="equityChart"></canvas>
+        </div>
+        <div class="bt-log">
+          <div class="pane-header">Trade Log</div>
+          <table>
+            <thead><tr><th>Time</th><th>Dir</th><th>Setup</th><th>R</th></tr></thead>
+            <tbody id="btLogBody"><tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">Run a backtest to see trades here.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="view-container" id="viewJournal">
+      <div class="journal-toolbar">
+        <button class="btn-sm" id="btnAddJournal">+ Log Current Setup</button>
+        <button class="btn-sm" id="btnRegenReasons">↻ Re-generate auto-reasons</button>
+        <button class="btn-sm" id="btnExportJournal">⬇ Export CSV</button>
+        <button class="btn-sm" id="btnClearJournal" style="border-color:var(--bear); color:var(--bear);">🗑 Clear All</button>
+        <span style="margin-left:auto; font-family:var(--font-mono); font-size:10px; color:var(--text-muted);" id="journalCount">0 entries</span>
+      </div>
+      <div class="hint" style="padding:0 16px 10px; margin:0;">Auto-generated reasons combine 4H bias, 15M structure, entry-TF SMC triggers and any checked institutional confluence strategies. Market structure/regime and a chart screenshot are captured automatically at log time. Fill in "R Result" after a trade closes to feed the Weekly/Monthly stats below.</div>
+      <div class="journal-stats" id="journalStats"></div>
+      <div class="table-wrapper">
+        <table id="journalTable">
+          <thead>
+            <tr>
+              <th></th><th>Time</th><th>Symbol</th><th>Dir</th><th>Score</th><th>Entry / SL / TP1</th><th>Reason for trade today (auto-fill, editable)</th><th>Outcome</th><th>R Result</th><th>Confidence</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="journalBody">
+            <tr><td colspan="10" class="journal-empty">No journal entries yet. Run a scan, then click "TRADE" &rarr; "Log to Journal" on a row, or use "+ Log Current Setup" while viewing a symbol on the Execution Desk.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ==========================================================================
+   CONFIG & UTILS
+   ========================================================================== */
+const CONFIG = {
+    symbols: ["BTCUSDT","ETHUSDT","BNBUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT","AVAXUSDT","LINKUSDT","TONUSDT","DOTUSDT","LTCUSDT","BCHUSDT","ATOMUSDT","NEARUSDT","APTUSDT","OPUSDT","SUIUSDT","INJUSDT","TIAUSDT"],
+    biasTf: '4h', structTf: '15m', entryTf: '5m',
+    portfolio: 100000,
+    riskPct: 0.01,
+    maxMargin: 10000,
+    takerFeeRate: 0.0004,        // Binance USDT-M futures taker fee, ~0.04% per side (approximate — actual rate depends on VIP tier/BNB discount)
+    maintenanceMarginRate: 0.005, // simplified flat 0.5% MMR used for the liquidation-price estimate (real MMR is tiered by position size)
+    scoreThreshold: 65,
+    obBufferAtrMult: 0.30,
+    slAtrMultFallback: 1.30,
+    rr1: 1.2, rr2: 2.5,
+    fapiBase: 'https://fapi.binance.com',
+    wsBase: 'wss://fstream.binance.com/ws',
+    // ---- Telegram alert delivery (bot token + chat id come from user input; nothing is baked in) ----
+    telegram: { screenshot: true },
+    // Mirrors + a spot-API fallback chain. fapi.binance.com is a single point of failure —
+    // on flaky mobile links or transient regional throttling it can time out or 4xx while
+    // the mirrors / spot endpoint still work. We walk this list until one responds.
+    apiMirrors: [
+        'https://fapi.binance.com', 'https://fapi1.binance.com', 'https://fapi2.binance.com'
+    ],
+    spotBase: 'https://api.binance.com',
+    requestTimeoutMs: 7000,
+    maxRetries: 2,
+    scanConcurrency: 4, // parallel symbols per scan batch — was 1-at-a-time, too slow + no backoff
+
+    // ---- Signal-quality filters (all optional, tuned to raise setup precision — a filter
+    // can only make the backtest sample smaller/cleaner, it cannot promise any outcome). ----
+    filters: {
+        volatility: true,      // skip signals when ATR% is too low (dead/chop = stop-hunts)
+        minAtrPct: 0.12,        // ATR / price, in %
+        volumeConfirm: true,   // require above-average volume on the trigger candle
+        volMultiplier: 1.25,
+        sessionGate: false,    // only allow entries inside chosen sessions
+        allowedSessions: ['overlap','london','ny'],
+        circuitBreaker: true,  // pause new entries after N consecutive losses
+        maxConsecLoss: 4,
+        cooldownBars: 12
+    },
+
+    // ---- Institutional confluence strategies — well-known, widely-used technical methods.
+    // Each is optional (all additive on top of the core SMC engine above). When a strategy's
+    // condition fires in the direction of the current setup, it adds to the score and appends
+    // a short "why" tag so the reasoning is visible in the screener and in the auto-journal.
+    // None of these guarantee profit — they narrow entries to higher-conviction confluence,
+    // the same way a discretionary institutional desk stacks multiple signals before sizing up.
+    strategies: {
+        vwap: {
+            enabled: true, weight: 12,
+            label: 'VWAP Mean-Reversion / Reclaim',
+            reason: 'Price is trading on the institutional side of session VWAP (the volume-weighted average price desks use as their intraday "fair value" mark). Market-making and execution desks (the kind used at firms like Citadel Securities) benchmark fills against VWAP — reclaiming/holding it signals the side absorbing order flow.'
+        },
+        emaStack: {
+            enabled: true, weight: 12,
+            label: 'EMA 20/50/200 Trend Stack',
+            reason: 'EMA20 / EMA50 / EMA200 are stacked in trend order with price on the correct side of all three — the classic multi-EMA trend-confirmation stack systematic/CTA and prop trend-following desks (in the style of JPMorgan\'s systematic strategies) use to avoid trading against the dominant regime.'
+        },
+        rsiDiv: {
+            enabled: false, weight: 10,
+            label: 'RSI(14) Divergence',
+            reason: 'Price made a new swing extreme while RSI(14) did not confirm it (bullish/bearish divergence) — a momentum-exhaustion tell that quant and prop mean-reversion desks use to time entries against an overextended move, always inside the higher-timeframe bias.'
+        },
+        macdCross: {
+            enabled: false, weight: 10,
+            label: 'MACD Momentum Cross',
+            reason: 'MACD line has crossed its signal line with the histogram expanding in the same direction — a standard momentum-confirmation trigger used as a secondary filter by systematic momentum strategies before adding to a position.'
+        },
+        bbSqueeze: {
+            enabled: false, weight: 10,
+            label: 'Bollinger Band Squeeze Breakout',
+            reason: 'Bollinger Band width compressed (volatility contraction) and is now expanding with a directional breakout candle — a volatility-cycle pattern volatility-arbitrage and prop breakout desks watch to time entries right as dealer gamma/hedging flow accelerates the move.'
+        },
+        volProfile: {
+            enabled: false, weight: 8,
+            label: 'Volume Profile POC Reaction',
+            reason: 'Price is reacting off the Point of Control (the price level with the heaviest traded volume in the lookback window) — institutional order-flow desks treat high-volume nodes as real support/resistance because they mark where the most size actually changed hands, not just where price touched.'
+        },
+        fundingBias: {
+            enabled: true, weight: 8,
+            label: 'Funding Rate Health Check',
+            reason: 'Perpetual funding is not stretched heavily against this direction. Extreme positive funding means longs are paying a premium (crowd overleveraged long); extreme negative funding is the mirror for shorts. Desks treat non-extreme funding as one input for whether a move still has room, not proof of direction alone.'
+        },
+        relVolume: {
+            enabled: true, weight: 10,
+            label: 'Relative Volume Surge (2x avg)',
+            reason: 'Traded volume on the trigger candle is at least double the 20-period average, stronger than the base volume filter requires. High relative volume is what order-flow desks look for to confirm real participation behind a move, not a low-liquidity spike that reverses.'
+        },
+        killZone: {
+            enabled: false, weight: 8,
+            label: 'Kill Zone Timing (London/NY Open)',
+            reason: 'The setup is forming inside the London Open (07:00-09:00 UTC) or New York Open (12:30-14:30 UTC) windows that discretionary and institutional execution desks treat as the highest-liquidity, highest-follow-through windows of the day, versus low-volume dead zones where moves are more likely to be noise.'
+        },
+        oiTrend: {
+            enabled: true, weight: 10,
+            label: 'Open Interest Confirmation',
+            reason: 'Open interest is rising alongside price in the trade direction, meaning new positions are being added rather than existing ones flipping. Futures desks use this to distinguish a trend built on fresh conviction from one running on short-covering or long-liquidation alone.'
+        }
+    }
+};
+
+const STATE = {
+    results: {}, funding: {}, activeSymbol: null, isScanning: false, auto: false,
+    tapeWs: null, domWs: null, klineWs: null, tapeDelta: 0,
+    prevAplus: new Set(), chartTf: '1m',
+    prevSignalDir: {}, // symbol -> last known dir, used to detect newly-appeared LONG/SHORT signals
+    sockets: {}, // name -> {url, retries, timer, intentionalClose}
+    scanErrors: {}, // symbol -> last error reason (for diagnostics panel)
+    lastFailedSymbols: [],
+    prevOI: {}, // symbol -> last scan's open interest, used to derive OI trend (rising/falling)
+    cvdHistory: [], tapeBuffer: [], domHeatMap: {}, divergenceFlag: null
+};
+
+const UTILS = {
+    tr: (h, l, pc) => Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)),
+    sma: (d, p) => { let r=Array(d.length).fill(0), s=0; for(let i=0;i<d.length;i++){ s+=d[i]; if(i>=p)s-=d[i-p]; if(i>=p-1)r[i]=s/p; } return r; },
+    atr: (c, p) => UTILS.sma(c.map((x,i)=>i===0?x.h-x.l:UTILS.tr(x.h,x.l,c[i-1].c)), p),
+    volSma: (c, p) => UTILS.sma(c.map(x=>x.v), p),
+    fmt: p => p===undefined||p===null ? '--' : (p<0.01 ? p.toFixed(6) : p<10 ? p.toFixed(4) : p.toFixed(2)),
+    sleep: ms => new Promise(r => setTimeout(r, ms)),
+
+    // ---- Indicator library backing the Institutional Confluence Strategies panel ----
+    ema: (d, p) => {
+        let r = Array(d.length).fill(null), k = 2 / (p + 1), prev = null;
+        for(let i=0;i<d.length;i++){
+            if(i === p - 1){ prev = d.slice(0,p).reduce((a,b)=>a+b,0)/p; r[i]=prev; }
+            else if(i >= p){ prev = d[i]*k + prev*(1-k); r[i]=prev; }
+        }
+        return r;
+    },
+    rsi: (candles, p=14) => {
+        let r = Array(candles.length).fill(null), gains=0, losses=0;
+        for(let i=1;i<candles.length;i++){
+            let ch = candles[i].c - candles[i-1].c, g = Math.max(ch,0), l = Math.max(-ch,0);
+            if(i <= p){ gains += g; losses += l; if(i===p){ let rs = losses===0?100:gains/(losses||1e-9); r[i] = losses===0?100:100-(100/(1+rs)); } }
+            else {
+                gains = (gains*(p-1)+g)/p; losses = (losses*(p-1)+l)/p;
+                let rs = losses===0 ? 100 : gains/(losses||1e-9);
+                r[i] = losses===0 ? 100 : 100-(100/(1+rs));
+            }
+        }
+        return r;
+    },
+    macd: (candles, fast=12, slow=26, sig=9) => {
+        let closes = candles.map(c=>c.c);
+        let emaFast = UTILS.ema(closes, fast), emaSlow = UTILS.ema(closes, slow);
+        let line = closes.map((_,i) => (emaFast[i]!==null && emaSlow[i]!==null) ? emaFast[i]-emaSlow[i] : null);
+        let lineVals = line.filter(v=>v!==null);
+        let sigCompact = UTILS.ema(lineVals, sig);
+        let signal = Array(line.length).fill(null), offset = line.length - lineVals.length;
+        sigCompact.forEach((v,i) => { if(v!==null) signal[i+offset] = v; });
+        let hist = line.map((v,i) => (v!==null && signal[i]!==null) ? v - signal[i] : null);
+        return { line, signal, hist };
+    },
+    bollinger: (candles, p=20, mult=2) => {
+        let closes = candles.map(c=>c.c);
+        let mid = UTILS.sma(closes, p);
+        let upper = Array(closes.length).fill(0), lower = Array(closes.length).fill(0), width = Array(closes.length).fill(0);
+        for(let i=p-1;i<closes.length;i++){
+            let slice = closes.slice(i-p+1, i+1);
+            let mean = mid[i];
+            let variance = slice.reduce((a,v)=>a+Math.pow(v-mean,2),0)/p;
+            let sd = Math.sqrt(variance);
+            upper[i] = mean + mult*sd; lower[i] = mean - mult*sd;
+            width[i] = mean ? ((upper[i]-lower[i])/mean)*100 : 0;
+        }
+        return { mid, upper, lower, width };
+    },
+    // Session-anchored VWAP approximation over the visible candle window (typical price * volume, cumulative)
+    vwap: (candles) => {
+        let cumPV = 0, cumV = 0, out = Array(candles.length).fill(null);
+        for(let i=0;i<candles.length;i++){
+            let tp = (candles[i].h + candles[i].l + candles[i].c) / 3;
+            cumPV += tp * candles[i].v; cumV += candles[i].v;
+            out[i] = cumV > 0 ? cumPV / cumV : null;
+        }
+        return out;
+    },
+    // Volume Profile Point of Control: bucket closes by price into N bins, return bin with most volume
+    volumeProfilePOC: (candles, bins=24) => {
+        if(!candles.length) return null;
+        let lo = Math.min(...candles.map(c=>c.l)), hi = Math.max(...candles.map(c=>c.h));
+        if(hi <= lo) return null;
+        let step = (hi - lo) / bins, buckets = Array(bins).fill(0);
+        candles.forEach(c => {
+            let idx = Math.min(bins-1, Math.max(0, Math.floor(((c.h+c.l)/2 - lo) / step)));
+            buckets[idx] += c.v;
+        });
+        let maxIdx = buckets.indexOf(Math.max(...buckets));
+        return { price: lo + step*(maxIdx+0.5), lo: lo + step*maxIdx, hi: lo + step*(maxIdx+1) };
+    },
+    beep: (freq=880, dur=0.12) => {
+        if(!document.getElementById('chkSound').checked) return;
+        try {
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            const o = actx.createOscillator(), g = actx.createGain();
+            o.type = 'sine'; o.frequency.value = freq;
+            g.gain.setValueAtTime(0.08, actx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+            o.connect(g); g.connect(actx.destination);
+            o.start(); o.stop(actx.currentTime + dur);
+        } catch(e) {}
+    }
+};
+
+/* ==========================================================================
+   REST API (Binance USDS-M Futures) — RESILIENT LAYER
+   Root cause of "Not enough data" / silently-missing symbols: the old layer did a single
+   fetch() with no timeout, no retry, and one hardcoded host. On a slow/unstable mobile
+   connection (or a transient block/throttle on one Binance edge) that one failed request
+   just returned null and the symbol/backtest was silently dropped. This layer:
+     1. bounds every request with a timeout so a stalled connection can't hang the scan,
+     2. retries transient failures with backoff,
+     3. walks a list of mirrors, then falls back to the Spot API (klines-compatible) if every
+        Futures mirror fails — spot data is a reasonable stand-in for structure/backtesting
+        when only the futures edge is unreachable,
+     4. records *why* a symbol failed (timeout / http status / network) instead of hiding it,
+        so the UI can tell the user "3 symbols failed: rate-limited" instead of "Not enough data".
+   ========================================================================== */
+const NET = {
+    fetchTimeout: async (url, ms) => {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), ms);
+        try {
+            const r = await fetch(url, { signal: ctrl.signal });
+            clearTimeout(t);
+            if(!r.ok) throw new Error(`HTTP ${r.status}`);
+            return await r.json();
+        } catch(e) {
+            clearTimeout(t);
+            throw (e.name === 'AbortError') ? new Error('timeout') : e;
+        }
+    },
+    // Try each base URL in order, with `retries` attempts each, before giving up.
+    resilientGet: async (paths, retries = CONFIG.maxRetries) => {
+        let lastErr = 'unknown';
+        for(const url of paths){
+            for(let attempt = 0; attempt <= retries; attempt++){
+                try { return { data: await NET.fetchTimeout(url, CONFIG.requestTimeoutMs), err: null }; }
+                catch(e){
+                    lastErr = e.message || String(e);
+                    if(attempt < retries) await UTILS.sleep(300 * Math.pow(2, attempt)); // backoff
+                }
+            }
+        }
+        return { data: null, err: lastErr };
+    }
+};
+
+const API = {
+    klines: async (s, i, limit=200) => {
+        const paths = [
+            ...CONFIG.apiMirrors.map(b => `${b}/fapi/v1/klines?symbol=${s}&interval=${i}&limit=${limit}`),
+            `${CONFIG.spotBase}/api/v3/klines?symbol=${s}&interval=${i}&limit=${limit}` // last-resort fallback
+        ];
+        const { data, err } = await NET.resilientGet(paths);
+        if(!data){ STATE.scanErrors[s] = err; return null; }
+        delete STATE.scanErrors[s];
+        return data.map(d => ({ time:d[0], o:+d[1], h:+d[2], l:+d[3], c:+d[4], v:+d[5] }));
+    },
+    fundingAll: async () => {
+        const paths = CONFIG.apiMirrors.map(b => `${b}/fapi/v1/premiumIndex`);
+        const { data } = await NET.resilientGet(paths, 1);
+        let map = {};
+        if(data) data.forEach(x => map[x.symbol] = { rate: +x.lastFundingRate, mark: +x.markPrice });
+        return map;
+    },
+    openInterest: async (s) => {
+        const paths = CONFIG.apiMirrors.map(b => `${b}/fapi/v1/openInterest?symbol=${s}`);
+        const { data } = await NET.resilientGet(paths, 1);
+        return data ? +data.openInterest : null;
+    }
+};
+
+/* ==========================================================================
+   QUANT ENGINE (SMC, MTF, S/R, Liquidity Sweeps)
+   ========================================================================== */
+const QUANT = {
+    analyze: (candles) => {
+        let atrs = UTILS.atr(candles, 14), limit = candles.length;
+
+        let swings = { h:[], l:[] };
+        for(let i=5; i<limit-5; i++){
+            if(Math.max(...candles.slice(i-5,i+6).map(c=>c.h)) === candles[i].h) swings.h.push({idx:i, p:candles[i].h});
+            if(Math.min(...candles.slice(i-5,i+6).map(c=>c.l)) === candles[i].l) swings.l.push({idx:i, p:candles[i].l});
+        }
+        let trend = 'RANGE';
+        if(swings.h.length>1 && swings.l.length>1) {
+            let lh = swings.h[swings.h.length-1].p, ph = swings.h[swings.h.length-2].p;
+            let ll = swings.l[swings.l.length-1].p, pl = swings.l[swings.l.length-2].p;
+            if(lh>ph && ll>pl) trend='BULLISH'; else if(lh<ph && ll<pl) trend='BEARISH';
+        }
+
+        let sr = { sup: swings.l.length ? swings.l[swings.l.length-1].p : null, res: swings.h.length ? swings.h[swings.h.length-1].p : null };
+
+        let fvgs = [];
+        for(let i=Math.max(0, limit-100); i<limit-2; i++){
+            if(candles[i+2].l - candles[i].h > 0) fvgs.push({t:'bull', top:candles[i+2].l, bot:candles[i].h, idx:i});
+            if(candles[i].l - candles[i+2].h > 0) fvgs.push({t:'bear', top:candles[i].l, bot:candles[i+2].h, idx:i});
+        }
+        fvgs = fvgs.filter(f => !candles.slice(f.idx+3).some(c => f.t==='bull'? c.l<f.bot : c.h>f.top));
+
+        let obs = [];
+        for(let i=Math.max(0, limit-100); i<limit-5; i++){
+            if(candles[i].c < candles[i].o && candles[i+3].c > candles[i].h * 1.003) obs.push({t:'bull', top:candles[i].h, bot:candles[i].l, idx:i});
+            if(candles[i].c > candles[i].o && candles[i+3].c < candles[i].l * 0.997) obs.push({t:'bear', top:candles[i].h, bot:candles[i].l, idx:i});
+        }
+        // Mitigation filter (previously only applied to FVGs, not OBs): once price has fully
+        // closed through an order block, it's spent — trading a "test" of a broken OB was a
+        // real source of low-quality signals in the original engine.
+        obs = obs.filter(o => !candles.slice(o.idx+3).some(c => o.t==='bull' ? c.c < o.bot : c.c > o.top));
+
+        let volSma20 = UTILS.volSma(candles, 20);
+        let lastVol = candles[limit-1].v, avgVol = volSma20[limit-1] || lastVol;
+        let atrPct = candles[limit-1].c ? (atrs[atrs.length-1] / candles[limit-1].c) * 100 : 0;
+
+        // Indicators for the Institutional Confluence Strategies panel — computed once here
+        // so evaluate() can just read the last value(s) instead of recomputing per-symbol.
+        let closes = candles.map(c=>c.c);
+        let ema20 = UTILS.ema(closes, 20), ema50 = UTILS.ema(closes, 50), ema200 = UTILS.ema(closes, 200);
+        let rsi14 = UTILS.rsi(candles, 14);
+        let macd = UTILS.macd(candles, 12, 26, 9);
+        let bb = UTILS.bollinger(candles, 20, 2);
+        let vwapSeries = UTILS.vwap(candles);
+        let poc = UTILS.volumeProfilePOC(candles.slice(-100));
+        let ind = {
+            ema20: ema20[limit-1], ema50: ema50[limit-1], ema200: ema200[limit-1],
+            rsi: rsi14[limit-1], rsiSeries: rsi14,
+            macdLine: macd.line[limit-1], macdSignal: macd.signal[limit-1],
+            macdLinePrev: macd.line[limit-2], macdSignalPrev: macd.signal[limit-2],
+            bbWidth: bb.width[limit-1], bbWidthPrev: bb.width[Math.max(0,limit-6)], bbUpper: bb.upper[limit-1], bbLower: bb.lower[limit-1],
+            vwap: vwapSeries[limit-1], poc
+        };
+
+        return { trend, sr, fvgs, obs, atr: atrs[atrs.length-1], atrPct, lastVol, avgVol, candles, swings, ind };
+    },
+
+    // livePrice: the decision price. In live scanning this is the last (possibly still-forming)
+    // price fetched separately from the closed-candle structure, to avoid repainting FVG/OB/swings.
+    // In backtesting this is simply the close of the candle being evaluated (fully causal).
+    evaluate: (bias, struct, entry, livePrice, sym) => {
+        let sc = 0, c = livePrice !== undefined && livePrice !== null ? livePrice : entry.candles[entry.candles.length-1].c;
+        let tags = [], dir = 'WAIT', isBull = false, isBear = false, triggerZone = null;
+
+        // Entry-TF SMC (FVG / OB tests) — computed only from CLOSED candles (entry.* built upstream)
+        entry.fvgs.forEach(f => {
+            if(f.t==='bull' && c>=f.bot && c<=f.top*1.002) { sc+=25; tags.push('Bull FVG'); isBull=true; if(!triggerZone) triggerZone={top:f.top,bot:f.bot,side:'bull'}; }
+            if(f.t==='bear' && c<=f.top && c>=f.bot*0.998) { sc+=25; tags.push('Bear FVG'); isBear=true; if(!triggerZone) triggerZone={top:f.top,bot:f.bot,side:'bear'}; }
+        });
+        entry.obs.forEach(o => {
+            // OB is a tighter, higher-priority structural reference than FVG, so it overrides as the SL anchor
+            if(o.t==='bull' && c>=o.bot && c<=o.top*1.002) { sc+=30; tags.push('Bull OB Test'); isBull=true; triggerZone={top:o.top,bot:o.bot,side:'bull'}; }
+            if(o.t==='bear' && c<=o.top && c>=o.bot*0.998) { sc+=30; tags.push('Bear OB Test'); isBear=true; triggerZone={top:o.top,bot:o.bot,side:'bear'}; }
+        });
+
+        // Liquidity sweep = confirmation bonus ONLY. It can no longer set direction on its own —
+        // it must co-occur with an OB/FVG test above, otherwise it's just noise on a low timeframe.
+        let sw = entry.swings, last2 = entry.candles.slice(-2);
+        if(sw.h.length>=2 && last2.length===2){
+            let priorHigh = sw.h[sw.h.length-2].p;
+            if(last2[0].h > priorHigh && last2[1].c < priorHigh){ tags.push('Liquidity Sweep (High)'); if(isBear) sc+=15; }
+        }
+        if(sw.l.length>=2 && last2.length===2){
+            let priorLow = sw.l[sw.l.length-2].p;
+            if(last2[0].l < priorLow && last2[1].c > priorLow){ tags.push('Liquidity Sweep (Low)'); if(isBull) sc+=15; }
+        }
+
+        // --- Institutional Confluence Strategies (optional, additive only) ---
+        // These never invent a direction on their own — they only add conviction/score to a
+        // direction the core SMC engine (FVG/OB test) already flagged above, mirroring how a
+        // discretionary institutional desk stacks confirming signals on top of a primary trigger.
+        let reasons = [];
+        const S = CONFIG.strategies, ind = entry.ind;
+        if((isBull || isBear) && ind){
+            if(S.vwap.enabled && ind.vwap){
+                if(isBull && c > ind.vwap){ sc += S.vwap.weight; tags.push('VWAP Reclaim'); reasons.push(S.vwap.reason); }
+                if(isBear && c < ind.vwap){ sc += S.vwap.weight; tags.push('VWAP Rejection'); reasons.push(S.vwap.reason); }
+            }
+            if(S.emaStack.enabled && ind.ema20 && ind.ema50 && ind.ema200){
+                if(isBull && ind.ema20 > ind.ema50 && ind.ema50 > ind.ema200 && c > ind.ema20){ sc += S.emaStack.weight; tags.push('EMA Bull Stack'); reasons.push(S.emaStack.reason); }
+                if(isBear && ind.ema20 < ind.ema50 && ind.ema50 < ind.ema200 && c < ind.ema20){ sc += S.emaStack.weight; tags.push('EMA Bear Stack'); reasons.push(S.emaStack.reason); }
+            }
+            if(S.rsiDiv.enabled && ind.rsiSeries){
+                let rs = ind.rsiSeries.filter(v=>v!==null);
+                if(rs.length >= 15){
+                    let recent = rs.slice(-15), lows = entry.candles.slice(-15).map(c=>c.l), highs = entry.candles.slice(-15).map(c=>c.h);
+                    let minPIdx = lows.indexOf(Math.min(...lows)), maxPIdx = highs.indexOf(Math.max(...highs));
+                    if(isBull && minPIdx > 2 && recent[minPIdx] > recent[0] && lows[minPIdx] <= Math.min(...lows.slice(0,3))){ sc += S.rsiDiv.weight; tags.push('RSI Bull Divergence'); reasons.push(S.rsiDiv.reason); }
+                    if(isBear && maxPIdx > 2 && recent[maxPIdx] < recent[0] && highs[maxPIdx] >= Math.max(...highs.slice(0,3))){ sc += S.rsiDiv.weight; tags.push('RSI Bear Divergence'); reasons.push(S.rsiDiv.reason); }
+                }
+            }
+            if(S.macdCross.enabled && ind.macdLine!==null && ind.macdSignal!==null && ind.macdLinePrev!==null && ind.macdSignalPrev!==null){
+                let crossUp = ind.macdLinePrev <= ind.macdSignalPrev && ind.macdLine > ind.macdSignal;
+                let crossDown = ind.macdLinePrev >= ind.macdSignalPrev && ind.macdLine < ind.macdSignal;
+                if(isBull && crossUp){ sc += S.macdCross.weight; tags.push('MACD Bull Cross'); reasons.push(S.macdCross.reason); }
+                if(isBear && crossDown){ sc += S.macdCross.weight; tags.push('MACD Bear Cross'); reasons.push(S.macdCross.reason); }
+            }
+            if(S.bbSqueeze.enabled && ind.bbWidth && ind.bbWidthPrev){
+                let expanding = ind.bbWidth > ind.bbWidthPrev * 1.15;
+                if(isBull && expanding && c >= ind.bbUpper){ sc += S.bbSqueeze.weight; tags.push('BB Squeeze Breakout ↑'); reasons.push(S.bbSqueeze.reason); }
+                if(isBear && expanding && c <= ind.bbLower){ sc += S.bbSqueeze.weight; tags.push('BB Squeeze Breakout ↓'); reasons.push(S.bbSqueeze.reason); }
+            }
+            if(S.volProfile.enabled && ind.poc){
+                let nearPoc = c >= ind.poc.lo * 0.998 && c <= ind.poc.hi * 1.002;
+                if(nearPoc && (isBull || isBear)){ sc += S.volProfile.weight; tags.push('Volume Profile POC'); reasons.push(S.volProfile.reason); }
+            }
+            // Funding rate health check — real Binance premiumIndex data, fetched once per scan
+            if(S.fundingBias.enabled && sym && STATE.funding[sym]){
+                let fr = STATE.funding[sym].rate;
+                const EXTREME = 0.0008; // ~0.08% per 8h is a commonly-cited "stretched" funding level
+                if(isBull && fr < EXTREME){ sc += S.fundingBias.weight; tags.push('Healthy Funding'); reasons.push(S.fundingBias.reason); }
+                if(isBear && fr > -EXTREME){ sc += S.fundingBias.weight; tags.push('Healthy Funding'); reasons.push(S.fundingBias.reason); }
+            }
+            // Relative volume surge — stricter bar (2x) than the base volume-confirm filter
+            if(S.relVolume.enabled && entry.avgVol > 0){
+                if((entry.lastVol / entry.avgVol) >= 2.0){ sc += S.relVolume.weight; tags.push('Rel. Volume 2x+'); reasons.push(S.relVolume.reason); }
+            }
+            // Kill zone timing — London Open / NY Open windows (UTC). Derived from the entry
+            // candle's own timestamp (not the wall clock) so this is equally valid live and
+            // inside the backtester — no lookahead from "now" leaking into a historical bar.
+            if(S.killZone.enabled){
+                const barTime = new Date(entry.candles[entry.candles.length-1].time);
+                const h = barTime.getUTCHours(), m = barTime.getUTCMinutes();
+                const hm = h + m/60;
+                const inKillZone = (hm >= 7 && hm < 9) || (hm >= 12.5 && hm < 14.5);
+                if(inKillZone){ sc += S.killZone.weight; tags.push('Kill Zone'); reasons.push(S.killZone.reason); }
+            }
+            // Open interest confirmation — rising OI in the trade direction vs last scan
+            if(S.oiTrend.enabled && sym && STATE.prevOI[sym] != null && STATE.openInterestNow && STATE.openInterestNow[sym] != null){
+                let oiChangePct = (STATE.openInterestNow[sym] - STATE.prevOI[sym]) / STATE.prevOI[sym] * 100;
+                if((isBull || isBear) && oiChangePct > 0.5){ sc += S.oiTrend.weight; tags.push(`OI Rising ${oiChangePct.toFixed(1)}%`); reasons.push(S.oiTrend.reason); }
+            }
+        }
+
+        // Filter conflicts against 4H bias
+        if(isBull && bias.trend === 'BEARISH') sc-=40;
+        if(isBear && bias.trend === 'BULLISH') sc-=40;
+
+        // --- Signal-quality filters (reduce false positives; do not add score by themselves) ---
+        const F = CONFIG.filters;
+        let filterVeto = null;
+        if(F.volatility && entry.atrPct !== undefined && entry.atrPct < F.minAtrPct){
+            filterVeto = 'Low volatility (chop)';
+        }
+        if(F.volumeConfirm && (isBull || isBear)){
+            let volOk = entry.avgVol > 0 ? (entry.lastVol / entry.avgVol) >= F.volMultiplier : true;
+            if(!volOk) filterVeto = filterVeto || 'No volume confirmation';
+            else { sc += 10; tags.push('Volume Confirmed'); }
+        }
+        if(F.sessionGate){
+            const h = new Date().getUTCHours();
+            const inSession = (h>=13&&h<17&&F.allowedSessions.includes('overlap')) ||
+                               (h>=8&&h<17&&F.allowedSessions.includes('london')) ||
+                               (h>=17&&h<22&&F.allowedSessions.includes('ny')) ||
+                               (h>=0&&h<8&&F.allowedSessions.includes('asia'));
+            if(!inSession) filterVeto = filterVeto || 'Outside allowed session';
+        }
+
+        sc = Math.max(0, Math.min(sc, 100));
+
+        if(sc >= CONFIG.scoreThreshold && bias.trend !== 'RANGE') dir = isBull ? 'LONG' : (isBear ? 'SHORT' : 'WAIT');
+        if(sc < CONFIG.scoreThreshold - 20 || bias.trend === 'RANGE') dir = 'AVOID';
+        if(filterVeto && (dir === 'LONG' || dir === 'SHORT')){ dir = 'WAIT'; tags.push('Filtered: ' + filterVeto); }
+
+        // Risk Engine — SL anchored to the structural zone that triggered the signal (OB/FVG boundary),
+        // not a flat ATR distance from price. Falls back to ATR only when no zone was captured.
+        let risk = { ent: c, sl: 0, tp1: 0, tp2: 0 };
+        if(dir === 'LONG'){
+            let structSl = triggerZone ? triggerZone.bot - entry.atr * CONFIG.obBufferAtrMult : c - entry.atr * CONFIG.slAtrMultFallback;
+            risk.sl = Math.min(structSl, c - entry.atr * 0.5); // never allow SL tighter than 0.5 ATR (avoid noise stop-outs)
+            risk.tp1 = c + ((c - risk.sl) * CONFIG.rr1);
+            risk.tp2 = c + ((c - risk.sl) * CONFIG.rr2);
+        } else if(dir === 'SHORT') {
+            let structSl = triggerZone ? triggerZone.top + entry.atr * CONFIG.obBufferAtrMult : c + entry.atr * CONFIG.slAtrMultFallback;
+            risk.sl = Math.max(structSl, c + entry.atr * 0.5);
+            risk.tp1 = c - ((risk.sl - c) * CONFIG.rr1);
+            risk.tp2 = c - ((risk.sl - c) * CONFIG.rr2);
+        }
+
+        return { sc, dir, tags: tags.length ? tags : ['No Clear Setup'], reasons, risk, bias, struct, entry };
+    }
+};
+
+/* ==========================================================================
+   MARKET REGIME DETECTION
+   Classifies the higher-timeframe (bias TF) state into a directional/volatility
+   regime using structure trend (from QUANT.analyze), EMA stack alignment, and
+   Bollinger Band width (compression vs expansion) as a volatility-cycle proxy.
+   This is a heuristic classifier, not a statistical model — it's built entirely
+   from indicators already computed in QUANT.analyze, so it costs no extra API
+   calls. Confidence is a 0-100 composite of how many of those signals agree.
+   ========================================================================== */
+const REGIME = {
+    STRATEGY_MAP: {
+        'Strong Bull Trend':  { use: 'Trend-following longs, breakout continuation, add on pullbacks to EMA20/OB.', avoid: 'Counter-trend shorts, mean-reversion fades against the trend.' },
+        'Weak Bull Trend':    { use: 'Selective longs at high-conviction structure (OB/FVG) only, tighter size.', avoid: 'Aggressive breakout chasing — trend lacks full confirmation.' },
+        'Strong Bear Trend':  { use: 'Trend-following shorts, breakdown continuation, add on pullbacks to EMA20/OB.', avoid: 'Counter-trend longs, catching-the-knife dip buys.' },
+        'Weak Bear Trend':    { use: 'Selective shorts at high-conviction structure only, tighter size.', avoid: 'Aggressive breakdown chasing — trend lacks full confirmation.' },
+        'Compression':        { use: 'Stand aside or scalp the range edges; prepare for a breakout in either direction.', avoid: 'Full-size breakout entries before the range actually resolves.' },
+        'Expansion':          { use: 'Breakout/momentum entries in the direction the range just resolved.', avoid: 'Fading the initial expansion move.' },
+        'Sideways':           { use: 'Range mean-reversion at S/R extremes, small size.', avoid: 'Trend-following entries — there is no trend to follow yet.' },
+        'High Volatility':    { use: 'Reduce position size, widen stops, favor confirmed setups only.', avoid: 'Full leverage, tight stops that get noise-stopped.' },
+        'Low Volatility':     { use: 'Wait for volatility expansion, or scalp small ranges with tight risk.', avoid: 'Oversized positions expecting a big move that may not come.' }
+    },
+
+    classify: (qBias) => {
+        if(!qBias || !qBias.ind) return { label: 'Unknown', volLabel: '', confidence: 0, strategy: '--', avoid: '--' };
+        const ind = qBias.ind;
+        let signals = 0, agree = 0;
+
+        // Directional regime from swing-structure trend + EMA stack alignment
+        let label;
+        const emaAligned = ind.ema20 && ind.ema50 && ind.ema200;
+        const bullStack = emaAligned && ind.ema20 > ind.ema50 && ind.ema50 > ind.ema200;
+        const bearStack = emaAligned && ind.ema20 < ind.ema50 && ind.ema50 < ind.ema200;
+
+        if(qBias.trend === 'BULLISH'){
+            signals++; if(bullStack) agree++;
+            label = bullStack ? 'Strong Bull Trend' : 'Weak Bull Trend';
+        } else if(qBias.trend === 'BEARISH'){
+            signals++; if(bearStack) agree++;
+            label = bearStack ? 'Strong Bear Trend' : 'Weak Bear Trend';
+        } else {
+            // RANGE — use BB width trend as compression vs expansion vs flat sideways
+            const bbExpanding = ind.bbWidth && ind.bbWidthPrev && ind.bbWidth > ind.bbWidthPrev * 1.15;
+            const bbCompressing = ind.bbWidth && ind.bbWidthPrev && ind.bbWidth < ind.bbWidthPrev * 0.85;
+            label = bbExpanding ? 'Expansion' : (bbCompressing ? 'Compression' : 'Sideways');
+            signals++; agree++; // structure agrees with itself by definition here
+        }
+
+        // Volatility overlay from ATR% (heuristic bands — not a statistical percentile)
+        let volLabel = '';
+        if(qBias.atrPct !== undefined){
+            signals++;
+            if(qBias.atrPct >= 0.6){ volLabel = 'High Volatility'; agree++; }
+            else if(qBias.atrPct <= 0.15){ volLabel = 'Low Volatility'; agree++; }
+        }
+
+        let confidence = signals ? Math.round((agree / signals) * 100) : 0;
+        // Blend in EMA/structure agreement more heavily for directional regimes
+        if(label.includes('Trend')) confidence = Math.round((confidence + (bullStack || bearStack ? 100 : 55)) / 2);
+
+        const map = REGIME.STRATEGY_MAP[label] || { use: '--', avoid: '--' };
+        const volMap = volLabel ? REGIME.STRATEGY_MAP[volLabel] : null;
+
+        return {
+            label, volLabel, confidence,
+            display: volLabel ? `${label} \u00b7 ${volLabel}` : label,
+            strategy: volMap ? `${map.use} ${volMap.use}` : map.use,
+            avoid: volMap ? `${map.avoid} ${volMap.avoid}` : map.avoid
+        };
+    }
+};
+
+/* ==========================================================================
+   INSTITUTIONAL PROBABILITY ENGINE
+   Wraps the raw confluence score (QUANT.evaluate's `sc`) into a fuller
+   institutional read: a letter grade, a confidence estimate, and — critically —
+   an expected win rate / avg R / average holding time / sample size pulled from
+   this browser's OWN backtest history (localStorage), never fabricated. Until
+   the user runs at least one backtest for a given score band, those fields are
+   honestly reported as "no history yet" rather than guessed.
+   ========================================================================== */
+const PROBABILITY = {
+    KEY: 'pq_stats_v1',
+    loadDB: () => { try { return JSON.parse(localStorage.getItem(PROBABILITY.KEY)) || {}; } catch(e) { return {}; } },
+    saveDB: (db) => { try { localStorage.setItem(PROBABILITY.KEY, JSON.stringify(db)); } catch(e) {} },
+
+    // Buckets by score band + the highest-priority structural tag, so "similar trades" means
+    // trades of comparable score AND comparable trigger type, not just any trade ever taken.
+    bucketOf: (sc, tags) => {
+        let scBand = sc>=90?'90+':sc>=80?'80-89':sc>=70?'70-79':sc>=60?'60-69':'<60';
+        let primaryTag = (tags || []).find(t => t.includes('OB')) ? 'OB'
+                        : (tags || []).find(t => t.includes('FVG')) ? 'FVG' : 'other';
+        return `${scBand}|${primaryTag}`;
+    },
+
+    grade: (sc) => sc>=90 ? 'A+' : sc>=80 ? 'A' : sc>=70 ? 'B' : sc>=60 ? 'C' : 'D',
+
+    // Called after every BACKTEST run to feed real, symbol-agnostic stats into the DB.
+    recordTrades: (trades) => {
+        if(!trades || !trades.length) return;
+        const db = PROBABILITY.loadDB();
+        trades.forEach(t => {
+            const key = PROBABILITY.bucketOf(t.sc || 0, t.tags);
+            if(!db[key]) db[key] = { n: 0, wins: 0, sumR: 0, sumHold: 0 };
+            db[key].n++;
+            if(t.r > 0) db[key].wins++;
+            db[key].sumR += t.r;
+            db[key].sumHold += (t.holdBars || 0);
+        });
+        PROBABILITY.saveDB(db);
+    },
+
+    clearDB: () => { PROBABILITY.saveDB({}); },
+
+    assess: (d) => {
+        const grade = PROBABILITY.grade(d.sc);
+        const bucket = PROBABILITY.bucketOf(d.sc, d.tags);
+        const stat = PROBABILITY.loadDB()[bucket];
+        const regimeAligned = d.regime && (
+            (d.dir === 'LONG' && d.regime.label.includes('Bull')) ||
+            (d.dir === 'SHORT' && d.regime.label.includes('Bear'))
+        );
+        // Confidence: the raw score, nudged up when the HTF regime agrees with the trade
+        // direction and nudged down when it doesn't — capped well short of 100 since this
+        // is still a heuristic composite, not a calibrated probability.
+        let confidence = Math.round(d.sc * (regimeAligned ? 1.05 : (d.regime && d.regime.label.match(/Trend/) ? 0.9 : 1)));
+        confidence = Math.max(0, Math.min(97, confidence));
+        return {
+            grade, confidence, bucket,
+            hasHistory: !!stat,
+            sampleSize: stat ? stat.n : 0,
+            winRate: stat ? Math.round((stat.wins / stat.n) * 100) : null,
+            avgR: stat ? +(stat.sumR / stat.n).toFixed(2) : null,
+            avgHoldBars: stat ? Math.round(stat.sumHold / stat.n) : null,
+            regimeAligned
+        };
+    }
+};
+
+/* ==========================================================================
+   PORTFOLIO OMS ENGINE
+   ========================================================================== */
+const OMS = {
+    calculate: (dir, riskData) => {
+        if(dir === 'WAIT' || dir === 'AVOID') return { sizeUsd: 0, lev: 1 };
+        let riskUsd = CONFIG.portfolio * CONFIG.riskPct;
+        let distPct = Math.abs(riskData.ent - riskData.sl) / riskData.ent;
+        if (distPct === 0) return { sizeUsd: 0, lev: 1 };
+        let positionSizeUsd = riskUsd / distPct;
+        let lev = Math.ceil(positionSizeUsd / CONFIG.maxMargin);
+        lev = Math.min(Math.max(lev, 1), 50);
+
+        let margin = positionSizeUsd / lev;
+        let fees = positionSizeUsd * CONFIG.takerFeeRate * 2; // open + close, taker both sides (worst case)
+        let mmr = CONFIG.maintenanceMarginRate;
+        let ent = riskData.ent, sl = riskData.sl;
+
+        // Simplified isolated-margin liquidation price estimate. Real exchange liq prices use
+        // tiered maintenance margin brackets and include unrealized PnL/fees more precisely —
+        // this is a close approximation for position-sizing sanity checks, not exact exchange math.
+        let liqPrice = dir === 'LONG'
+            ? ent * (1 - (1 / lev) + mmr)
+            : ent * (1 + (1 / lev) - mmr);
+
+        // Does the stop-loss actually trigger BEFORE liquidation? If not, the position is
+        // over-leveraged relative to its own stop — a real risk-management red flag.
+        let slSafe = dir === 'LONG' ? sl > liqPrice : sl < liqPrice;
+
+        // Max safe leverage: the highest leverage at which liquidation sits at (or beyond, with
+        // a 20% buffer) the stop-loss distance — i.e. the SL will always be hit first.
+        let rawMaxLev = dir === 'LONG'
+            ? 1 / (1 - mmr - sl / ent)
+            : 1 / (sl / ent - 1 + mmr);
+        let maxSafeLev = Math.max(1, Math.min(50, Math.floor(rawMaxLev * 0.8)));
+        let maxSafePositionUsd = Math.min(maxSafeLev * CONFIG.maxMargin, riskUsd / distPct * 3);
+
+        return { sizeUsd: positionSizeUsd, lev, margin, fees, liqPrice, slSafe, maxSafeLev, maxSafePositionUsd };
+    },
+    updateTicket: (sym, data) => {
+        let omsData = OMS.calculate(data.dir, data.risk);
+        let actEl = document.getElementById('omsAction');
+        actEl.innerText = data.dir;
+        actEl.style.color = data.dir === 'LONG' ? 'var(--bull)' : (data.dir === 'SHORT' ? 'var(--bear)' : 'var(--text-muted)');
+
+        document.getElementById('omsEnt').innerText = data.dir !== 'AVOID' ? UTILS.fmt(data.risk.ent) : '--';
+        document.getElementById('omsSl').innerText = data.dir !== 'AVOID' ? UTILS.fmt(data.risk.sl) : '--';
+        document.getElementById('omsTp').innerText = data.dir !== 'AVOID' ? `${UTILS.fmt(data.risk.tp1)} / ${UTILS.fmt(data.risk.tp2)}` : '--';
+        document.getElementById('omsSize').innerText = omsData.sizeUsd > 0 ? '$' + omsData.sizeUsd.toLocaleString(undefined, {maximumFractionDigits:2}) : '--';
+        document.getElementById('omsLev').innerText = omsData.lev > 1 ? omsData.lev + 'x' : '--';
+        document.getElementById('omsLev').style.color = omsData.lev > 20 ? 'var(--bear)' : 'var(--accent)';
+        document.getElementById('omsBe').innerText = data.dir !== 'AVOID' ? `Move SL to ${UTILS.fmt(data.risk.ent)} after TP1` : '--';
+
+        const hasPlan = (data.dir === 'LONG' || data.dir === 'SHORT') && omsData.sizeUsd > 0;
+        document.getElementById('omsMargin').innerText = hasPlan ? '$' + omsData.margin.toLocaleString(undefined, {maximumFractionDigits:2}) : '--';
+        document.getElementById('omsFees').innerText = hasPlan ? '$' + omsData.fees.toFixed(2) : '--';
+        document.getElementById('omsLiq').innerText = hasPlan ? UTILS.fmt(omsData.liqPrice) : '--';
+        document.getElementById('omsLiq').style.color = hasPlan && !omsData.slSafe ? 'var(--bear)' : 'var(--text-main)';
+        document.getElementById('omsMaxSafe').innerText = hasPlan ? '$' + omsData.maxSafePositionUsd.toLocaleString(undefined, {maximumFractionDigits:0}) + ` @ ${omsData.maxSafeLev}x max` : '--';
+
+        const safetyEl = document.getElementById('omsSafetyNote');
+        if(hasPlan && !omsData.slSafe){
+            safetyEl.style.display = 'block';
+            safetyEl.style.color = 'var(--bear)';
+            safetyEl.innerText = `⚠ At ${omsData.lev}x, estimated liquidation (${UTILS.fmt(omsData.liqPrice)}) sits BEFORE your stop-loss — reduce leverage/size or this trade can be liquidated before the plan's own invalidation level is hit.`;
+        } else if(hasPlan){
+            safetyEl.style.display = 'block';
+            safetyEl.style.color = 'var(--text-faint)';
+            safetyEl.innerText = `Stop-loss triggers before estimated liquidation at this size/leverage — plan is structurally sound. Liquidation estimate is approximate (isolated margin, flat MMR) — verify on your exchange before sizing up.`;
+        } else {
+            safetyEl.style.display = 'none';
+        }
+
+        let fr = STATE.funding[sym];
+        document.getElementById('fundVal').innerText = fr ? (fr.rate*100).toFixed(4)+'%' : '--';
+
+        OMS.renderRegime(data.regime);
+        OMS.renderProbability(data);
+    },
+
+    renderRegime: (regime) => {
+        const el = document.getElementById('regimePanel');
+        if(!el) return;
+        if(!regime){ el.innerHTML = '<div style="color:var(--text-muted);">No regime data yet.</div>'; return; }
+        const color = regime.label.includes('Bull') ? 'var(--bull)' : regime.label.includes('Bear') ? 'var(--bear)' : 'var(--warn)';
+        el.innerHTML = `
+            <div style="font-size:14px; font-weight:700; color:${color};">${regime.display}</div>
+            <div style="color:var(--text-muted); margin:4px 0;">Confidence: <b style="color:#FFF;">${regime.confidence}%</b></div>
+            <div style="margin-top:6px;"><span style="color:var(--bull); font-weight:700;">✓ Favor:</span> <span style="color:var(--text-main);">${regime.strategy}</span></div>
+            <div style="margin-top:6px;"><span style="color:var(--bear); font-weight:700;">✗ Avoid:</span> <span style="color:var(--text-main);">${regime.avoid}</span></div>`;
+    },
+
+    renderProbability: (data) => {
+        const el = document.getElementById('probPanel');
+        if(!el) return;
+        const p = data.prob;
+        if(!p || data.dir === 'AVOID' || data.dir === 'WAIT'){
+            el.innerHTML = `<div style="color:var(--text-muted);">No active LONG/SHORT setup — nothing to grade right now.</div>`;
+            return;
+        }
+        const gradeColor = { 'A+':'var(--bull)', 'A':'var(--bull)', 'B':'var(--warn)', 'C':'var(--warn)', 'D':'var(--bear)' }[p.grade] || 'var(--text-muted)';
+        const histHtml = p.hasHistory
+            ? `<div>Expected Win Rate: <b style="color:#FFF;">${p.winRate}%</b> &nbsp;(n=${p.sampleSize} similar trades)</div>
+               <div>Expected Avg R: <b style="color:${p.avgR>=0?'var(--bull)':'var(--bear)'}">${p.avgR>=0?'+':''}${p.avgR}R</b></div>
+               <div>Avg Holding Time: <b style="color:#FFF;">${p.avgHoldBars} bars</b> (${STATE.activeSymbol && CONFIG.entryTf ? CONFIG.entryTf : ''})</div>`
+            : `<div style="color:var(--text-faint);">No backtest history yet for this score/setup band — run a Backtest Lab session on this symbol/TF to populate real expected win-rate stats instead of a guess.</div>`;
+        const whyHtml = data.tags.filter(t => !t.startsWith('Filtered')).map(t => `<div>• ${t}</div>`).join('');
+        const oppositeDir = data.dir === 'LONG' ? 'SHORT' : 'LONG';
+        const whyNot = `<div style="margin-top:4px; color:var(--text-faint);">4H bias is ${data.bias.trend}${data.regime ? `, regime is ${data.regime.label}` : ''} — conditions do not support ${oppositeDir} here.</div>`;
+        el.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:20px; font-weight:700; color:#FFF;">${data.sc}<span style="font-size:11px; color:var(--text-muted);">/100</span></span>
+                <span class="badge" style="font-size:13px; padding:4px 10px; color:${gradeColor}; border:1px solid ${gradeColor};">${p.grade}</span>
+            </div>
+            <div style="margin:6px 0;">Confidence: <b style="color:#FFF;">${p.confidence}%</b> ${p.regimeAligned ? '<span style="color:var(--bull); font-size:9px;">(regime-aligned)</span>' : ''}</div>
+            ${histHtml}
+            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border-light);">
+                <div style="color:var(--text-muted); font-weight:700; font-size:10px; text-transform:uppercase;">Why ${data.dir}?</div>
+                ${whyHtml}
+                ${whyNot}
+            </div>`;
+    }
+};
+
+/* ==========================================================================
+   SIGNAL TOASTS — visual + optional browser Notification fired the moment
+   auto-scan (or a manual scan) finds a NEW LONG/SHORT that wasn't flagged
+   on the previous pass.
+   ========================================================================== */
+const TOAST = {
+    show: (sym, dir, d) => {
+        const stack = document.getElementById('toastStack');
+        if(!stack) return;
+        const el = document.createElement('div');
+        el.className = 'toast ' + (dir === 'LONG' ? 'long' : 'short');
+        const dirColor = dir === 'LONG' ? 'var(--bull)' : 'var(--bear)';
+        const dirBg = dir === 'LONG' ? 'var(--bull-dim)' : 'var(--bear-dim)';
+        el.innerHTML = `
+            <div class="toast-top">
+                <span class="toast-sym">${sym}</span>
+                <span class="toast-dir" style="color:${dirColor}; background:${dirBg};">${dir} · ${d.sc}</span>
+            </div>
+            <div class="toast-reason">${d.tags.slice(0,3).join(' · ')}</div>
+            <div class="toast-reason" style="margin-top:4px; color:var(--text-faint);">Ent ${UTILS.fmt(d.risk.ent)} · SL ${UTILS.fmt(d.risk.sl)} · TP1 ${UTILS.fmt(d.risk.tp1)}</div>`;
+        el.onclick = () => { UI.loadTerminal(sym); el.remove(); };
+        stack.prepend(el);
+        setTimeout(() => { el.classList.add('toast-fade'); setTimeout(() => el.remove(), 400); }, 9000);
+        while(stack.children.length > 6) stack.removeChild(stack.lastChild);
+    },
+    notify: (sym, dir, d) => {
+        if(!('Notification' in window) || Notification.permission !== 'granted') return;
+        try {
+            new Notification(`${dir} signal: ${sym}`, {
+                body: `Score ${d.sc} · ${d.tags.slice(0,2).join(', ')} · Ent ${UTILS.fmt(d.risk.ent)} / SL ${UTILS.fmt(d.risk.sl)}`,
+                tag: sym + dir
+            });
+        } catch(e) {}
+    }
+};
+
+/* ==========================================================================
+   TRADING JOURNAL — persisted (localStorage) log of setups, with an
+   auto-generated "reason for trade today" narrative the trader can edit.
+   ========================================================================== */
+const JOURNAL = {
+    KEY: 'pq_journal_v1',
+    load: () => { try { return JSON.parse(localStorage.getItem(JOURNAL.KEY)) || []; } catch(e) { return []; } },
+    save: (entries) => { try { localStorage.setItem(JOURNAL.KEY, JSON.stringify(entries)); } catch(e) {} },
+
+    autoReason: (sym, d) => {
+        const dirWord = d.dir === 'LONG' ? 'long' : (d.dir === 'SHORT' ? 'short' : 'no-trade');
+        let parts = [];
+        parts.push(`${sym}: 4H bias is ${d.bias.trend}, 15M structure shows support at ${UTILS.fmt(d.struct.sr.sup)} and resistance at ${UTILS.fmt(d.struct.sr.res)}.`);
+        parts.push(`Entry-TF trigger: ${d.tags.filter(t=>!t.startsWith('Filtered')).join(', ')}.`);
+        if(d.reasons && d.reasons.length){
+            parts.push(`Confluence confirmation: ${[...new Set(d.reasons)].join(' ')}`);
+        }
+        if(d.dir === 'LONG' || d.dir === 'SHORT'){
+            parts.push(`Plan: enter ${dirWord} near ${UTILS.fmt(d.risk.ent)}, stop at ${UTILS.fmt(d.risk.sl)} (structural invalidation), targets ${UTILS.fmt(d.risk.tp1)} (TP1, 1.2R) and ${UTILS.fmt(d.risk.tp2)} (TP2, 2.5R). Take 50% off at TP1 and move stop to entry.`);
+        } else {
+            parts.push(`No qualifying entry yet — score ${d.sc} vs threshold ${CONFIG.scoreThreshold}. Waiting for confluence to align before risking capital.`);
+        }
+        return parts.join(' ');
+    },
+
+    add: (sym) => {
+        if(!sym || !STATE.results[sym]){ alert('No scan result for this symbol yet — run the scanner first.'); return; }
+        const d = STATE.results[sym];
+        const entries = JOURNAL.load();
+        let screenshot = null;
+        try {
+            const off = document.createElement('canvas');
+            off.width = 480; off.height = 260;
+            CHART.render(sym, null, off);
+            screenshot = off.toDataURL('image/jpeg', 0.5); // compressed to keep localStorage light
+        } catch(e) { /* screenshot capture is best-effort — never block logging on it */ }
+
+        entries.unshift({
+            id: Date.now() + '_' + sym,
+            time: new Date().toISOString(),
+            sym, dir: d.dir, score: d.sc,
+            ent: d.risk.ent, sl: d.risk.sl, tp1: d.risk.tp1, tp2: d.risk.tp2,
+            reason: JOURNAL.autoReason(sym, d),
+            structure: `4H bias: ${d.bias.trend} | Regime: ${d.regime ? d.regime.display : 'n/a'} | 15M S/R: ${UTILS.fmt(d.struct.sr.sup)} / ${UTILS.fmt(d.struct.sr.res)}`,
+            outcome: 'Open', notes: '',
+            emotions: '', confidence: 3, mistakes: '', lessons: '', rResult: '',
+            screenshot
+        });
+        JOURNAL.save(entries);
+        JOURNAL.render();
+    },
+
+    update: (id, field, value) => {
+        const entries = JOURNAL.load();
+        const e = entries.find(x => x.id === id);
+        if(e){ e[field] = value; JOURNAL.save(entries); }
+    },
+
+    remove: (id) => {
+        const entries = JOURNAL.load().filter(x => x.id !== id);
+        JOURNAL.save(entries);
+        JOURNAL.render();
+    },
+
+    clear: () => {
+        if(!confirm('Clear the entire trading journal? This cannot be undone.')) return;
+        JOURNAL.save([]);
+        JOURNAL.render();
+    },
+
+    regenerate: () => {
+        const entries = JOURNAL.load().map(e => {
+            const d = STATE.results[e.sym];
+            return d ? { ...e, reason: JOURNAL.autoReason(e.sym, d) } : e;
+        });
+        JOURNAL.save(entries);
+        JOURNAL.render();
+    },
+
+    exportCSV: () => {
+        const entries = JOURNAL.load();
+        if(!entries.length){ alert('Journal is empty.'); return; }
+        const esc = v => `"${String(v===undefined||v===null?'':v).replace(/"/g,'""')}"`;
+        const rows = [['Time','Symbol','Direction','Score','Entry','SL','TP1','TP2','Reason','Structure','Outcome','R Result','Confidence','Emotions','Mistakes','Lessons Learned','Notes'].join(',')];
+        entries.forEach(e => rows.push([e.time, e.sym, e.dir, e.score, e.ent, e.sl, e.tp1, e.tp2, e.reason, e.structure, e.outcome, e.rResult, e.confidence, e.emotions, e.mistakes, e.lessons, e.notes].map(esc).join(',')));
+        const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `trading_journal_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+    },
+
+    _expanded: new Set(),
+    toggleExpand: (id) => {
+        if(JOURNAL._expanded.has(id)) JOURNAL._expanded.delete(id); else JOURNAL._expanded.add(id);
+        JOURNAL.render();
+    },
+
+    // ISO week key (YYYY-Www) so stats bucket cleanly across year boundaries
+    isoWeekKey: (date) => {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+    },
+
+    computeStats: () => {
+        const entries = JOURNAL.load().filter(e => e.rResult !== '' && e.rResult !== null && e.rResult !== undefined && !isNaN(parseFloat(e.rResult)));
+        const now = new Date();
+        const thisWeekKey = JOURNAL.isoWeekKey(now);
+        const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        const summarize = (list) => {
+            if(!list.length) return { n: 0, winRate: 0, totalR: 0, avgR: 0 };
+            const wins = list.filter(e => parseFloat(e.rResult) > 0).length;
+            const totalR = list.reduce((a, e) => a + parseFloat(e.rResult), 0);
+            return { n: list.length, winRate: Math.round((wins / list.length) * 100), totalR: +totalR.toFixed(2), avgR: +(totalR / list.length).toFixed(2) };
+        };
+        const weekEntries = entries.filter(e => JOURNAL.isoWeekKey(new Date(e.time)) === thisWeekKey);
+        const monthEntries = entries.filter(e => { const t = new Date(e.time); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}` === thisMonthKey; });
+        return { week: summarize(weekEntries), month: summarize(monthEntries) };
+    },
+
+    renderStats: () => {
+        const el = document.getElementById('journalStats');
+        if(!el) return;
+        const stats = JOURNAL.computeStats();
+        const card = (title, s) => `
+            <div class="jstat-card">
+                <div class="jstat-title">${title}</div>
+                ${s.n ? `
+                    <div class="jstat-row"><span>Trades logged</span><b>${s.n}</b></div>
+                    <div class="jstat-row"><span>Win Rate</span><b style="color:${s.winRate>=50?'var(--bull)':'var(--bear)'}">${s.winRate}%</b></div>
+                    <div class="jstat-row"><span>Total R</span><b style="color:${s.totalR>=0?'var(--bull)':'var(--bear)'}">${s.totalR>=0?'+':''}${s.totalR}R</b></div>
+                    <div class="jstat-row"><span>Avg R / Trade</span><b>${s.avgR>=0?'+':''}${s.avgR}R</b></div>
+                ` : `<div style="color:var(--text-faint); font-size:11px;">No closed trades with an "R Result" logged yet this period.</div>`}
+            </div>`;
+        el.innerHTML = card('This Week', stats.week) + card('This Month', stats.month);
+    },
+
+    render: () => {
+        const entries = JOURNAL.load();
+        const countEl = document.getElementById('journalCount');
+        if(countEl) countEl.innerText = `${entries.length} entries`;
+        JOURNAL.renderStats();
+        const body = document.getElementById('journalBody');
+        if(!body) return;
+        if(!entries.length){
+            body.innerHTML = `<tr><td colspan="10" class="journal-empty">No journal entries yet. Run a scan, then click the 📓 icon on a screener row, or use "+ Log Current Setup" while viewing a symbol on the Execution Desk.</td></tr>`;
+            return;
+        }
+        body.innerHTML = entries.map(e => {
+            const dirColor = e.dir === 'LONG' ? 'var(--bull)' : (e.dir === 'SHORT' ? 'var(--bear)' : 'var(--text-muted)');
+            const t = new Date(e.time);
+            const isOpen = JOURNAL._expanded.has(e.id);
+            const mainRow = `
+            <tr>
+                <td><button class="jr-expand-btn" onclick="JOURNAL.toggleExpand('${e.id}')">${isOpen ? '−' : '+'}</button></td>
+                <td class="mono" style="font-size:10px; color:var(--text-muted);">${t.toLocaleDateString()}<br>${t.toLocaleTimeString()}</td>
+                <td style="font-weight:700; color:#FFF;">${e.sym}</td>
+                <td><span class="badge" style="color:${dirColor}; border:1px solid ${dirColor};">${e.dir}</span></td>
+                <td class="mono">${e.score}</td>
+                <td class="mono" style="font-size:10px;">E ${UTILS.fmt(e.ent)}<br>SL ${UTILS.fmt(e.sl)}<br>TP1 ${UTILS.fmt(e.tp1)}</td>
+                <td><textarea class="jr-reason" onchange="JOURNAL.update('${e.id}','reason',this.value)">${(e.reason||'').replace(/</g,'&lt;')}</textarea></td>
+                <td>
+                    <select class="jr-outcome" onchange="JOURNAL.update('${e.id}','outcome',this.value)">
+                        ${['Open','Win','Loss','Breakeven','Skipped'].map(o=>`<option ${o===e.outcome?'selected':''}>${o}</option>`).join('')}
+                    </select>
+                </td>
+                <td><input type="number" step="0.1" class="mono" style="width:60px; background:var(--bg-base); border:1px solid var(--border); color:var(--text-main); border-radius:3px; padding:5px;" value="${e.rResult ?? ''}" placeholder="R" onchange="JOURNAL.update('${e.id}','rResult',this.value)"></td>
+                <td>
+                    <select onchange="JOURNAL.update('${e.id}','confidence',this.value)">
+                        ${[1,2,3,4,5].map(n=>`<option value="${n}" ${String(e.confidence)===String(n)?'selected':''}>${'★'.repeat(n)}</option>`).join('')}
+                    </select>
+                </td>
+                <td><button class="jr-del" onclick="JOURNAL.remove('${e.id}')">✕</button></td>
+            </tr>`;
+            const detailRow = isOpen ? `
+            <tr class="jr-detail-row">
+                <td colspan="10">
+                    <div class="jr-detail-grid">
+                        <div class="jr-detail-field">
+                            <label>Market Structure (auto-captured at log time)</label>
+                            <textarea readonly style="opacity:0.75;">${(e.structure||'—').replace(/</g,'&lt;')}</textarea>
+                        </div>
+                        <div class="jr-detail-field">
+                            <label>Emotions</label>
+                            <select onchange="JOURNAL.update('${e.id}','emotions',this.value)">
+                                ${['','Calm / Neutral','Confident','FOMO','Fear','Greedy','Anxious','Revenge Trading','Impatient'].map(o=>`<option ${o===e.emotions?'selected':''}>${o||'—'}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="jr-detail-field">
+                            <label>Chart Screenshot (captured at log time)</label>
+                            ${e.screenshot ? `<img class="jr-shot" src="${e.screenshot}">` : `<div style="color:var(--text-faint); font-size:10px;">No screenshot captured.</div>`}
+                        </div>
+                        <div class="jr-detail-field">
+                            <label>Mistakes</label>
+                            <textarea placeholder="What, if anything, did you do wrong?" onchange="JOURNAL.update('${e.id}','mistakes',this.value)">${(e.mistakes||'').replace(/</g,'&lt;')}</textarea>
+                        </div>
+                        <div class="jr-detail-field">
+                            <label>Lessons Learned</label>
+                            <textarea placeholder="What would you do differently?" onchange="JOURNAL.update('${e.id}','lessons',this.value)">${(e.lessons||'').replace(/</g,'&lt;')}</textarea>
+                        </div>
+                        <div class="jr-detail-field">
+                            <label>Notes</label>
+                            <textarea placeholder="Anything else..." onchange="JOURNAL.update('${e.id}','notes',this.value)">${(e.notes||'').replace(/</g,'&lt;')}</textarea>
+                        </div>
+                    </div>
+                </td>
+            </tr>` : '';
+            return mainRow + detailRow;
+        }).join('');
+    }
+};
+
+/* ==========================================================================
+   SESSION CLOCK (Asia / London / NY overlap)
+   ========================================================================== */
+const SESSION = {
+    update: () => {
+        const now = new Date();
+        const h = now.getUTCHours();
+        document.getElementById('clock').innerText = now.toISOString().substr(11,8);
+        let label, cls;
+        if(h>=13 && h<17) { label = '⚡ LONDON/NY OVERLAP'; cls = 'prime'; }
+        else if(h>=8 && h<17) { label = 'LONDON'; cls = ''; }
+        else if(h>=17 && h<22) { label = 'NEW YORK'; cls = ''; }
+        else if(h>=0 && h<8) { label = 'ASIA'; cls = ''; }
+        else { label = 'LOW LIQUIDITY'; cls = 'low'; }
+        let el = document.getElementById('sessionBadge');
+        el.innerText = label;
+        el.className = 'session-badge ' + cls;
+
+        // Kill-zone dots on the Execution Desk session bar (London Open 07-09 UTC, NY Open 12:30-14:30 UTC)
+        const hm = h + now.getUTCMinutes()/60;
+        const asiaActive = h>=0 && h<8, londonActive = hm>=7 && hm<9, nyActive = hm>=12.5 && hm<14.5;
+        const dot = (id, active) => { let d = document.getElementById(id); if(d) d.className = 'kz-dot' + (active ? ' active' : ''); };
+        dot('kzAsia', asiaActive); dot('kzLondon', londonActive); dot('kzNy', nyActive);
+    }
+};
+
+/* ==========================================================================
+   SESSION ANALYTICS — aggregates already-fetched candle history (struct TF)
+   into Asia/London/NY buckets: volume, range/volatility, and a session-anchored
+   VWAP for the session currently in progress. No extra API calls — reuses the
+   same struct-timeframe candles already pulled for the SMC engine.
+   ========================================================================== */
+const SESSION_STATS = {
+    bucketFor: (utcHour) => (utcHour>=0 && utcHour<8) ? 'asia' : (utcHour>=8 && utcHour<13) ? 'london' : 'ny',
+
+    compute: (candles) => {
+        let out = {
+            asia:   { vol: 0, n: 0, hi: -Infinity, lo: Infinity },
+            london: { vol: 0, n: 0, hi: -Infinity, lo: Infinity },
+            ny:     { vol: 0, n: 0, hi: -Infinity, lo: Infinity }
+        };
+        candles.forEach(c => {
+            let key = SESSION_STATS.bucketFor(new Date(c.time).getUTCHours());
+            let b = out[key];
+            b.vol += c.v; b.n++;
+            if(c.h > b.hi) b.hi = c.h;
+            if(c.l < b.lo) b.lo = c.l;
+        });
+        Object.values(out).forEach(b => { b.rangePct = (b.n && b.lo > 0 && isFinite(b.hi)) ? ((b.hi - b.lo) / b.lo) * 100 : 0; });
+        return out;
+    },
+
+    // VWAP anchored to the start of the CURRENT session only (more meaningful for intraday
+    // execution than a VWAP running over the whole fetched window).
+    currentSessionVwap: (candles) => {
+        const nowHour = new Date().getUTCHours();
+        const bucket = SESSION_STATS.bucketFor(nowHour);
+        const inSameSession = c => SESSION_STATS.bucketFor(new Date(c.time).getUTCHours()) === bucket;
+        // Walk backward from the end to collect only the contiguous run of candles in the current session
+        let slice = [];
+        for(let i = candles.length - 1; i >= 0; i--){
+            if(inSameSession(candles[i])) slice.unshift(candles[i]); else break;
+        }
+        if(!slice.length) return null;
+        const series = UTILS.vwap(slice);
+        return series[series.length - 1];
+    },
+
+    render: (symbol) => {
+        const data = STATE.results[symbol];
+        const bar = document.getElementById('sessionBar');
+        if(!data || !bar) return;
+        const candles = data.struct.candles; // 15m struct candles — good multi-hour coverage
+        const stats = SESSION_STATS.compute(candles);
+        const nowHour = new Date().getUTCHours();
+        const currentBucket = SESSION_STATS.bucketFor(nowHour);
+
+        ['asia','london','ny'].forEach(key => {
+            const card = bar.querySelector(`[data-sess="${key}"]`);
+            if(!card) return;
+            card.classList.toggle('current', currentBucket === key);
+            const body = card.querySelector('.session-card-body');
+            const b = stats[key];
+            body.innerHTML = b.n
+                ? `Vol: ${b.vol.toLocaleString(undefined,{maximumFractionDigits:1})}<br>Range: ${b.rangePct.toFixed(2)}%`
+                : 'No data';
+        });
+
+        const vwap = SESSION_STATS.currentSessionVwap(candles);
+        const vwapEl = document.getElementById('sessVwapVal');
+        if(vwapEl) vwapEl.innerText = vwap ? UTILS.fmt(vwap) : '--';
+    }
+};
+
+/* ==========================================================================
+   LIQUIDITY — derives equal-highs/equal-lows liquidity pools (the classic
+   "resting stops above/below" zones) from the entry-TF swing points QUANT.analyze
+   already computed. Two swing highs within a small tolerance of each other are
+   flagged as an equal-highs pool (buy-side liquidity resting above); the mirror
+   applies to equal lows (sell-side liquidity resting below).
+   ========================================================================== */
+const LIQUIDITY = {
+    TOLERANCE_PCT: 0.12, // swings within 0.12% of each other count as "equal"
+
+    findPools: (swings) => {
+        const pools = [];
+        const group = (arr, type) => {
+            for(let i = 0; i < arr.length; i++){
+                for(let j = i + 1; j < arr.length; j++){
+                    const diffPct = Math.abs(arr[i].p - arr[j].p) / arr[i].p * 100;
+                    if(diffPct <= LIQUIDITY.TOLERANCE_PCT){
+                        pools.push({ price: (arr[i].p + arr[j].p) / 2, type, idxA: arr[i].idx, idxB: arr[j].idx });
+                    }
+                }
+            }
+        };
+        group(swings.h, 'EQH');
+        group(swings.l, 'EQL');
+        return pools;
+    }
+};
+
+/* ==========================================================================
+   MULTI-COIN RANKING — ranks scanned symbols on a weighted composite of real,
+   already-computed factors (nothing fetched separately): institutional score,
+   20-bar momentum, relative volume, a liquidity proxy (avg volume × price),
+   and downside risk (ATR%, inverted — lower volatility ranks higher for a
+   given score). Each factor is min-max normalized across the current result
+   set before weighting, so the composite is always relative to what's on
+   screen right now, not an absolute scale.
+   ========================================================================== */
+const RANKING = {
+    WEIGHTS: { score: 0.35, momentum: 0.15, relVol: 0.15, liquidity: 0.10, risk: 0.10, edge: 0.15 },
+
+    momentumPct: (candles, lookback = 20) => {
+        if(!candles || candles.length < lookback + 1) return 0;
+        const now = candles[candles.length - 1].c, then = candles[candles.length - 1 - lookback].c;
+        return then > 0 ? ((now - then) / then) * 100 : 0;
+    },
+
+    normalize: (arr, key, invert) => {
+        const vals = arr.map(x => x[key]);
+        const min = Math.min(...vals), max = Math.max(...vals);
+        const range = (max - min) || 1;
+        arr.forEach(x => { x['n_' + key] = invert ? 1 - ((x[key] - min) / range) : (x[key] - min) / range; });
+    },
+
+    computeTop: (limit = 10) => {
+        const rows = Object.entries(STATE.results)
+            .filter(([, d]) => d.dir === 'LONG' || d.dir === 'SHORT')
+            .map(([sym, d]) => {
+                const candles = d.entry.candles;
+                const lastPrice = candles[candles.length - 1].c;
+                const relVol = d.entry.avgVol > 0 ? d.entry.lastVol / d.entry.avgVol : 1;
+                const liquidityUsd = d.entry.avgVol * lastPrice;
+                const momentum = RANKING.momentumPct(candles);
+                const atrPct = d.entry.atrPct || 0;
+                // "Edge" = the real backtest-derived expectancy if we have history for this bucket, else the raw score as a fallback proxy
+                const edge = d.prob && d.prob.hasHistory ? d.prob.winRate * (d.prob.avgR || 0) : d.sc * 0.3;
+                return { sym, dir: d.dir, sc: d.sc, regime: d.regime, grade: d.prob ? d.prob.grade : '--', momentum, relVol, liquidityUsd, atrPct, edge };
+            });
+        if(!rows.length) return [];
+
+        RANKING.normalize(rows, 'sc', false);
+        RANKING.normalize(rows, 'momentum', false);
+        RANKING.normalize(rows, 'relVol', false);
+        RANKING.normalize(rows, 'liquidityUsd', false);
+        RANKING.normalize(rows, 'atrPct', true); // inverted — lower volatility is "better" for the risk factor
+        RANKING.normalize(rows, 'edge', false);
+
+        rows.forEach(r => {
+            r.composite = Math.round(100 * (
+                r.n_sc * RANKING.WEIGHTS.score +
+                r.n_momentum * RANKING.WEIGHTS.momentum +
+                r.n_relVol * RANKING.WEIGHTS.relVol +
+                r.n_liquidityUsd * RANKING.WEIGHTS.liquidity +
+                r.n_atrPct * RANKING.WEIGHTS.risk +
+                r.n_edge * RANKING.WEIGHTS.edge
+            ));
+        });
+
+        return rows.sort((a, b) => b.composite - a.composite).slice(0, limit);
+    },
+
+    render: () => {
+        const body = document.getElementById('rankingsBody');
+        if(!body) return;
+        const top = RANKING.computeTop(10);
+        if(!top.length){
+            body.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:40px; color:var(--text-muted);">No active LONG/SHORT setups in the current scan to rank.</td></tr>`;
+            return;
+        }
+        body.innerHTML = top.map((r, i) => {
+            const dirColor = r.dir === 'LONG' ? 'var(--bull)' : 'var(--bear)';
+            const gradeColor = { 'A+':'var(--bull)', 'A':'var(--bull)', 'B':'var(--warn)', 'C':'var(--warn)', 'D':'var(--bear)' }[r.grade] || 'var(--text-muted)';
+            const momColor = r.momentum >= 0 ? 'var(--bull)' : 'var(--bear)';
+            return `
+            <tr onclick="UI.loadTerminal('${r.sym}')" style="cursor:pointer;">
+                <td class="mono" style="color:var(--text-muted);">${i + 1}</td>
+                <td style="font-weight:700; color:#FFF;">${r.sym}</td>
+                <td><span class="badge" style="color:${dirColor}; border:1px solid ${dirColor};">${r.dir}</span></td>
+                <td style="font-size:10px; color:var(--text-muted);">${r.regime ? r.regime.display : '--'}</td>
+                <td><span class="badge" style="color:${gradeColor}; border:1px solid ${gradeColor};">${r.grade}</span></td>
+                <td class="mono">${r.sc}</td>
+                <td class="mono" style="color:${momColor};">${r.momentum >= 0 ? '+' : ''}${r.momentum.toFixed(2)}%</td>
+                <td class="mono">${r.relVol.toFixed(2)}x</td>
+                <td class="mono" style="font-size:10px;">$${r.liquidityUsd.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td class="mono" style="font-size:10px;">${r.atrPct.toFixed(2)}%</td>
+                <td class="mono" style="font-weight:700; color:var(--accent);">${r.composite}</td>
+                <td><button class="btn-sm" style="padding:6px 8px; font-size:10px;" onclick="event.stopPropagation(); UI.loadTerminal('${r.sym}')">TRADE</button></td>
+            </tr>`;
+        }).join('');
+    }
+};
+
+/* ==========================================================================
+   RESILIENT WEBSOCKET WRAPPER (auto-reconnect w/ backoff)
+   ========================================================================== */
+const SOCK = {
+    open: (name, url, onMessage, onOpenExtra) => {
+        SOCK.close(name);
+        let entry = { url, retries: 0, intentional: false, ws: null };
+        STATE.sockets[name] = entry;
+
+        const connect = () => {
+            let ws = new WebSocket(url);
+            entry.ws = ws;
+            ws.onopen = () => { entry.retries = 0; SOCK.setDot(name, true); if(onOpenExtra) onOpenExtra(); };
+            ws.onmessage = onMessage;
+            ws.onclose = () => {
+                SOCK.setDot(name, false);
+                if(entry.intentional) return;
+                entry.retries = Math.min(entry.retries + 1, 6);
+                let delay = Math.min(1000 * Math.pow(1.6, entry.retries), 10000);
+                entry.timer = setTimeout(connect, delay);
+            };
+            ws.onerror = () => { try{ws.close();}catch(e){} };
+        };
+        connect();
+    },
+    close: (name) => {
+        let entry = STATE.sockets[name];
+        if(!entry) return;
+        entry.intentional = true;
+        if(entry.timer) clearTimeout(entry.timer);
+        if(entry.ws) try{ entry.ws.close(); }catch(e){}
+        delete STATE.sockets[name];
+        SOCK.setDot(name, false);
+    },
+    setDot: (name, live) => {
+        let map = { tape: 'tapeDot', dom: 'domDot', kline: 'klineDot' };
+        let el = document.getElementById(map[name]);
+        if(el) el.className = 'conn-dot ' + (live ? 'live' : 'down');
+    }
+};
+
+/* ==========================================================================
+   ORDER FLOW — approximated from the public aggTrade stream (this is a retail
+   browser, not a co-located FIX feed, so these are heuristic reads, not
+   certainties — labeled "(approx)" in the UI accordingly):
+     - Iceberg: 5+ trades at ~the same price & side stacking up in a short
+       window, suggesting a resting order refilling after each fill.
+     - Absorption: one side dominates volume in a short window but price
+       barely moves — aggression is being soaked up by passive size.
+     - Delta Divergence: price direction and CVD direction disagree over the
+       recent window — a classic order-flow warning that the move lacks real
+       participation behind it.
+   ========================================================================== */
+const ORDERFLOW = {
+    detect: (buf) => {
+        if(!buf || buf.length < 8) return null;
+        const recent = buf.slice(-15);
+
+        // Iceberg approximation
+        const counts = {};
+        recent.forEach(t => { const k = t.p.toPrecision(5) + '|' + t.dir; counts[k] = (counts[k] || 0) + 1; });
+        const icebergEntry = Object.entries(counts).find(([, n]) => n >= 5);
+        if(icebergEntry) return { type: 'iceberg', side: icebergEntry[0].split('|')[1], icon: '❄️' };
+
+        // Absorption approximation
+        const buyVol = recent.filter(t => t.dir === 'buy').reduce((a, t) => a + t.q, 0);
+        const sellVol = recent.filter(t => t.dir === 'sell').reduce((a, t) => a + t.q, 0);
+        const dominant = buyVol > sellVol * 1.5 ? 'buy' : (sellVol > buyVol * 1.5 ? 'sell' : null);
+        const prices = recent.map(t => t.p);
+        const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+        const rangePct = avgPrice ? ((Math.max(...prices) - Math.min(...prices)) / avgPrice) * 100 : 0;
+        if(dominant && rangePct < 0.05) return { type: 'absorption', side: dominant, icon: '🧊' };
+
+        return null;
+    },
+
+    checkDivergence: (cvdHistory) => {
+        if(!cvdHistory || cvdHistory.length < 40) return null;
+        const recent = cvdHistory.slice(-40);
+        const cvdUp = recent[recent.length - 1].cvd > recent[0].cvd;
+        const priceUp = recent[recent.length - 1].price > recent[0].price;
+        if(priceUp && !cvdUp) return { type: 'bearish', label: 'Bearish Delta Divergence' };
+        if(!priceUp && cvdUp) return { type: 'bullish', label: 'Bullish Delta Divergence' };
+        return null;
+    }
+};
+
+/* ==========================================================================
+   LIVE FEEDS: trade tape, order book (DOM), live kline
+   ========================================================================== */
+const WS = {
+    lastCvdRender: 0,
+    lastChartRender: 0,
+    lastTapeRender: 0,
+    pendingTapeRows: [],
+
+    connectAll: (symbol) => {
+        let s = symbol.toLowerCase();
+        document.getElementById('tapeDelta').innerText = '0.00';
+        STATE.tapeDelta = 0;
+        STATE.cvdHistory = []; STATE.tapeBuffer = []; STATE.domHeatMap = {}; STATE.divergenceFlag = null;
+        WS.pendingTapeRows = [];
+        document.getElementById('tapeList').innerHTML = '';
+        document.getElementById('domList').innerHTML = '';
+        document.getElementById('cvdVal').innerText = '0.00';
+        document.getElementById('flowFlag').textContent = '';
+        document.getElementById('flowFlag').className = 'flow-flag';
+
+        // Trade tape + order flow (CVD, absorption/iceberg approximation)
+        SOCK.open('tape', `${CONFIG.wsBase}/${s}@aggTrade`, (e) => {
+            let data = JSON.parse(e.data);
+            let dir = data.m ? 'sell' : 'buy';
+            let q = parseFloat(data.q), p = parseFloat(data.p);
+            STATE.tapeDelta += (dir === 'buy' ? q : -q);
+
+            let dEl = document.getElementById('tapeDelta');
+            dEl.innerText = (STATE.tapeDelta > 0 ? '+' : '') + STATE.tapeDelta.toFixed(2);
+            dEl.style.color = STATE.tapeDelta > 0 ? 'var(--bull)' : 'var(--bear)';
+            let cvdEl = document.getElementById('cvdVal');
+            cvdEl.innerText = (STATE.tapeDelta >= 0 ? '+' : '') + STATE.tapeDelta.toFixed(2);
+            cvdEl.style.color = STATE.tapeDelta >= 0 ? 'var(--bull)' : 'var(--bear)';
+
+            STATE.cvdHistory.push({ t: data.T, cvd: STATE.tapeDelta, price: p });
+            if(STATE.cvdHistory.length > 300) STATE.cvdHistory.shift();
+            STATE.tapeBuffer.push({ t: data.T, p, q, dir });
+            if(STATE.tapeBuffer.length > 120) STATE.tapeBuffer.shift();
+
+            let flag = ORDERFLOW.detect(STATE.tapeBuffer);
+            WS.updateFlowFlag(flag);
+
+            const rowHtml = `<div class="tape-row ${dir}${flag ? ' flagged' : ''}"><span>${new Date(data.T).toISOString().substr(11, 8)}</span> <span>${UTILS.fmt(p)}</span> <span>${q.toFixed(3)}${flag ? ' ' + flag.icon : ''}</span></div>`;
+            WS.pendingTapeRows.unshift(rowHtml);
+            if(WS.pendingTapeRows.length > 40) WS.pendingTapeRows.length = 40;
+
+            let now = Date.now();
+            // Batches DOM writes for the trade tape/CVD chart to a max ~8/sec — on very liquid
+            // pairs the aggTrade stream can fire dozens of times/sec, and re-rendering the DOM
+            // on every single print is wasted CPU the browser tab doesn't need to spend.
+            if(now - WS.lastTapeRender > 120){
+                document.getElementById('tapeList').innerHTML = WS.pendingTapeRows.join('');
+                WS.lastTapeRender = now;
+            }
+            if(now - WS.lastCvdRender > 150){ WS.renderCvdChart(); WS.lastCvdRender = now; }
+        });
+
+        // Order book depth (DOM) + liquidity heatmap accumulation
+        SOCK.open('dom', `${CONFIG.wsBase}/${s}@depth20@100ms`, (e) => {
+            let data = JSON.parse(e.data);
+            WS.renderDom(data.b || data.bids, data.a || data.asks);
+        });
+
+        // Live candle stream for the currently selected entry timeframe
+        WS.connectKline(symbol, STATE.chartTf);
+    },
+    connectKline: (symbol, tf) => {
+        let s = symbol.toLowerCase();
+        SOCK.open('kline', `${CONFIG.wsBase}/${s}@kline_${tf}`, (e) => {
+            let msg = JSON.parse(e.data).k;
+            let res = STATE.results[symbol];
+            if(!res) return;
+            let store = res.liveCandles || (res.liveCandles = {});
+            let arr = store[tf] || (store[tf] = res.entry.candles.slice());
+            let last = arr[arr.length-1];
+            let cd = { time: msg.t, o:+msg.o, h:+msg.h, l:+msg.l, c:+msg.c, v:+msg.v };
+            if(last && last.time === cd.time) arr[arr.length-1] = cd; else arr.push(cd);
+            if(arr.length > 220) arr.shift();
+            if(STATE.activeSymbol === symbol){
+                let now = Date.now();
+                if(now - WS.lastChartRender > 120){ CHART.render(symbol, arr); WS.lastChartRender = now; }
+                STATE.divergenceFlag = ORDERFLOW.checkDivergence(STATE.cvdHistory);
+            }
+        });
+    },
+    updateFlowFlag: (tapeFlag) => {
+        const el = document.getElementById('flowFlag');
+        if(!el) return;
+        const div = STATE.divergenceFlag;
+        if(div){ el.textContent = div.label; el.className = 'flow-flag divergence'; return; }
+        if(!tapeFlag){ el.textContent = ''; el.className = 'flow-flag'; return; }
+        if(tapeFlag.type === 'iceberg'){ el.textContent = `Iceberg (approx) · ${tapeFlag.side}`; el.className = 'flow-flag iceberg'; }
+        else if(tapeFlag.type === 'absorption'){ el.textContent = `Absorption · ${tapeFlag.side} side`; el.className = 'flow-flag absorption'; }
+    },
+    renderCvdChart: () => {
+        const canvas = document.getElementById('cvdChart');
+        if(!canvas || !canvas.parentElement) return;
+        canvas.width = canvas.parentElement.clientWidth; canvas.height = 34;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const hist = STATE.cvdHistory;
+        if(hist.length < 2) return;
+        const vals = hist.map(h => h.cvd);
+        const minV = Math.min(...vals, 0), maxV = Math.max(...vals, 0);
+        const range = (maxV - minV) || 1;
+        const getY = v => canvas.height - 2 - ((v - minV) / range) * (canvas.height - 4);
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.setLineDash([2, 3]);
+        ctx.beginPath(); const zy = getY(0); ctx.moveTo(0, zy); ctx.lineTo(canvas.width, zy); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.strokeStyle = vals[vals.length - 1] >= 0 ? '#089981' : '#F23645';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        hist.forEach((h, i) => {
+            const x = (i / (hist.length - 1)) * canvas.width, y = getY(h.cvd);
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.lineWidth = 1;
+    },
+    renderDom: (bids, asks) => {
+        if(!bids || !asks || !bids.length || !asks.length) return;
+        let b = bids.slice(0,8).map(x=>({p:+x[0], q:+x[1]}));
+        let a = asks.slice(0,8).map(x=>({p:+x[0], q:+x[1]})).reverse();
+        let maxQ = Math.max(...b.map(x=>x.q), ...a.map(x=>x.q), 0.0001);
+        let bestBid = b[0].p, bestAsk = a[a.length-1].p;
+        let spread = bestAsk - bestBid;
+        let spreadBps = (spread / bestBid) * 10000;
+        document.getElementById('spreadVal').innerText = UTILS.fmt(spread) + ` (${spreadBps.toFixed(1)}bps)`;
+
+        let html = a.map(x => `<div class="dom-row dom-ask"><div class="dom-bar ask" style="width:${(x.q/maxQ*100).toFixed(0)}%"></div><span>${UTILS.fmt(x.p)}</span><span>${x.q.toFixed(3)}</span></div>`).join('');
+        html += `<div class="dom-mid">${UTILS.fmt((bestBid+bestAsk)/2)}</div>`;
+        html += b.map(x => `<div class="dom-row dom-bid"><div class="dom-bar bid" style="width:${(x.q/maxQ*100).toFixed(0)}%"></div><span>${UTILS.fmt(x.p)}</span><span>${x.q.toFixed(3)}</span></div>`).join('');
+        document.getElementById('domList').innerHTML = html;
+
+        // Liquidity heatmap: track the peak recent size seen at each price level, decaying
+        // older peaks so the strip reflects PERSISTENT liquidity, not just this instant's snapshot.
+        Object.keys(STATE.domHeatMap).forEach(k => {
+            STATE.domHeatMap[k] *= 0.92;
+            if(STATE.domHeatMap[k] < 0.01) delete STATE.domHeatMap[k];
+        });
+        [...b, ...a].forEach(x => {
+            const key = x.p.toPrecision(6);
+            STATE.domHeatMap[key] = Math.max(STATE.domHeatMap[key] || 0, x.q);
+        });
+        WS.renderDomHeat(bestBid, bestAsk);
+    },
+    renderDomHeat: (bestBid, bestAsk) => {
+        const canvas = document.getElementById('domHeat');
+        if(!canvas || !canvas.parentElement) return;
+        canvas.width = canvas.parentElement.clientWidth; canvas.height = 26;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const entries = Object.entries(STATE.domHeatMap).map(([k, v]) => ({ p: parseFloat(k), heat: v })).sort((x, y) => x.p - y.p);
+        if(!entries.length) return;
+        const maxHeat = Math.max(...entries.map(e => e.heat), 0.0001);
+        const minP = entries[0].p, maxP = entries[entries.length - 1].p;
+        const pRange = (maxP - minP) || 1;
+        const mid = (bestBid + bestAsk) / 2;
+        entries.forEach(e => {
+            const x = ((e.p - minP) / pRange) * (canvas.width - 3);
+            const intensity = Math.min(1, e.heat / maxHeat);
+            ctx.fillStyle = e.p <= mid ? `rgba(8,153,129,${0.12 + intensity * 0.75})` : `rgba(242,54,69,${0.12 + intensity * 0.75})`;
+            ctx.fillRect(x, 0, 3, canvas.height);
+        });
+    }
+};
+
+/* ==========================================================================
+   UI, CANVAS
+   ========================================================================== */
+const UI = {
+    switchTab: (tabId) => {
+        document.querySelectorAll('.desk-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+        const viewMap = { tabScreener: 'viewScreener', tabTerminal: 'viewTerminal', tabRankings: 'viewRankings', tabBacktest: 'viewBacktest', tabJournal: 'viewJournal' };
+        document.getElementById(tabId).classList.add('active');
+        document.getElementById(viewMap[tabId]).classList.add('active');
+        if(tabId === 'tabTerminal' && STATE.activeSymbol) CHART.render(STATE.activeSymbol);
+        if(tabId === 'tabJournal') JOURNAL.render();
+    },
+
+    renderMacro: () => {
+        let longs = [], shorts = [], avoids = [];
+        Object.entries(STATE.results).forEach(([sym, d]) => {
+            if(d.dir === 'LONG') longs.push(sym);
+            else if(d.dir === 'SHORT') shorts.push(sym);
+            else avoids.push(sym);
+        });
+        document.getElementById('countLong').innerText = longs.length;
+        document.getElementById('countShort').innerText = shorts.length;
+        document.getElementById('countAvoid').innerText = avoids.length;
+        const mapLinks = (arr) => arr.map(s => `<span onclick="UI.loadTerminal('${s}')">${s}</span>`).join('');
+        document.getElementById('listLong').innerHTML = longs.length ? mapLinks(longs) : 'None';
+        document.getElementById('listShort').innerHTML = shorts.length ? mapLinks(shorts) : 'None';
+        document.getElementById('listAvoid').innerHTML = avoids.length ? mapLinks(avoids) : 'None';
+    },
+
+    renderTable: () => {
+        let html = '';
+        let sorted = Object.entries(STATE.results).sort((a,b) => b[1].sc - a[1].sc);
+        sorted.forEach(([sym, d]) => {
+            let bdg = d.dir==='LONG'?'bg-bull':(d.dir==='SHORT'?'bg-bear':(d.dir==='AVOID'?'bg-avoid':'bg-wait'));
+            let srHtml = `SUP: ${d.struct.sr.sup ? UTILS.fmt(d.struct.sr.sup) : '--'} <br> RES: ${d.struct.sr.res ? UTILS.fmt(d.struct.sr.res) : '--'}`;
+            let fr = STATE.funding[sym];
+            let frHtml = fr ? `<span style="color:${fr.rate>=0?'var(--bull)':'var(--bear)'}">${(fr.rate*100).toFixed(4)}%</span>` : '--';
+            let riskHtml = d.dir === 'LONG' || d.dir === 'SHORT' ?
+                `<span style="color:var(--text-main)">ENT: ${UTILS.fmt(d.risk.ent)}</span><br>
+                 <span style="color:var(--bear)">SL: ${UTILS.fmt(d.risk.sl)}</span> | <span style="color:var(--bull)">TP1: ${UTILS.fmt(d.risk.tp1)}</span>` :
+                `<span style="color:var(--text-muted)">--</span>`;
+
+            let regime = d.regime || { display: '--', confidence: 0 };
+            let regimeColor = regime.label && regime.label.includes('Bull') ? 'var(--bull)' : (regime.label && regime.label.includes('Bear') ? 'var(--bear)' : 'var(--text-muted)');
+            let regimeHtml = `<span style="color:${regimeColor}; font-size:10px; font-weight:600;">${regime.display}</span><br><span style="font-size:9px; color:var(--text-faint);">${regime.confidence}% conf.</span>`;
+
+            let prob = d.prob || { grade: '--', winRate: null, sampleSize: 0 };
+            let gradeColor = { 'A+':'var(--bull)', 'A':'var(--bull)', 'B':'var(--warn)', 'C':'var(--warn)', 'D':'var(--bear)' }[prob.grade] || 'var(--text-muted)';
+            let gradeHtml = `<span class="badge" style="color:${gradeColor}; border:1px solid ${gradeColor};">${prob.grade}</span>` +
+                (prob.hasHistory ? `<br><span style="font-size:9px; color:var(--text-faint);">${prob.winRate}% WR (n=${prob.sampleSize})</span>` : `<br><span style="font-size:9px; color:var(--text-faint);">no history</span>`);
+
+            html += `
+            <tr onclick="UI.loadTerminal('${sym}')">
+                <td style="font-weight:700; color:#FFF;">${sym}</td>
+                <td><span class="badge ${bdg}">${d.dir}</span></td>
+                <td style="line-height:1.4;">${regimeHtml}</td>
+                <td style="line-height:1.4;">${gradeHtml}</td>
+                <td class="mono" style="font-size:10px; color:var(--text-muted); line-height:1.4;">${srHtml}</td>
+                <td class="mono" style="font-size:10px;">${frHtml}</td>
+                <td><span style="color:var(--accent); font-weight:600; font-size:10px;">${d.tags.join(', ')}</span></td>
+                <td class="mono" style="font-size:10px;">${riskHtml}</td>
+                <td style="display:flex; gap:6px;">
+                    <button class="btn" style="padding:6px 10px; font-size:10px;" onclick="event.stopPropagation(); UI.loadTerminal('${sym}')">TRADE</button>
+                    <button class="btn-sm" style="padding:6px 8px; font-size:10px;" onclick="event.stopPropagation(); JOURNAL.add('${sym}')" title="Log this setup to Trading Journal">📓</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('screenerBody').innerHTML = html;
+        UI.renderMacro();
+    },
+
+    loadTerminal: (sym) => {
+        STATE.activeSymbol = sym;
+        UI.switchTab('tabTerminal');
+        document.getElementById('chartTitle').innerText = `${sym} Execution Chart (Live ${STATE.chartTf.toUpperCase()})`;
+
+        OMS.updateTicket(sym, STATE.results[sym]);
+        CHART.render(sym);
+        SESSION_STATS.render(sym);
+        WS.connectAll(sym);
+        let btSel = document.getElementById('btSymbol');
+        if(btSel) btSel.value = sym;
+
+        API.openInterest(sym).then(oi => { if(oi!==null) document.getElementById('oiVal').innerText = oi.toLocaleString(undefined,{maximumFractionDigits:0}); });
+    }
+};
+
+const CHART = {
+    canvas: document.getElementById('smcChart'),
+    ctx: document.getElementById('smcChart').getContext('2d'),
+    // targetCanvas: optional — used for offscreen renders (e.g. Telegram screenshot of a
+    // symbol that isn't the one currently on-screen). Falls back to the live chart canvas.
+    render: (symbol, liveArr, targetCanvas) => {
+        const data = STATE.results[symbol];
+        if(!data) return;
+        let candles = liveArr || (data.liveCandles && data.liveCandles[STATE.chartTf]) || data.entry.candles;
+
+        let c = targetCanvas || CHART.canvas;
+        if(c.parentElement){ c.width = c.parentElement.clientWidth; c.height = c.parentElement.clientHeight; }
+        let ctx = c.getContext('2d');
+        ctx.clearRect(0, 0, c.width, c.height);
+
+        let view = candles.slice(-100);
+        if(!view.length) return;
+        let minP = Math.min(...view.map(x=>x.l)), maxP = Math.max(...view.map(x=>x.h));
+        let pRange = maxP - minP || 1;
+
+        let padT = 20, padB = 20, h = c.height - padT - padB, w = c.width;
+        let cw = (w / view.length) * 0.7, space = (w / view.length);
+        const getY = p => padT + h - ((p - minP) / pRange) * h;
+
+        let startIdx = candles.length - view.length;
+
+        data.entry.obs.forEach(ob => {
+            if(ob.idx >= startIdx - 50) {
+                let x = Math.max(0, (ob.idx - startIdx) * space);
+                let yT = getY(ob.top), yB = getY(ob.bot);
+                ctx.fillStyle = ob.t==='bull' ? 'rgba(8, 153, 129, 0.15)' : 'rgba(242, 54, 69, 0.15)';
+                ctx.fillRect(x, yT, w - x, Math.abs(yB - yT) || 1);
+            }
+        });
+
+        // Liquidity pools (equal highs / equal lows) — resting stop-loss clusters the
+        // market is statistically drawn toward sweeping before a real reversal/continuation.
+        const pools = LIQUIDITY.findPools(data.entry.swings).filter(p => p.price >= minP && p.price <= maxP);
+        pools.forEach(p => {
+            let y = getY(p.price);
+            ctx.strokeStyle = 'rgba(255, 193, 7, 0.55)'; ctx.setLineDash([2, 5]);
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(255, 193, 7, 0.9)'; ctx.font = '8.5px JetBrains Mono';
+            ctx.fillText(p.type + ' \u00b7 liquidity', w - 90, y - 2);
+        });
+
+        // SL / TP guide lines for active plan
+        if(data.dir === 'LONG' || data.dir === 'SHORT'){
+            const guide = (price, color, label) => {
+                let y = getY(price);
+                ctx.strokeStyle = color; ctx.setLineDash([4,3]);
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = color; ctx.font = '9px JetBrains Mono';
+                ctx.fillText(label, 6, y - 3);
+            };
+            guide(data.risk.sl, '#F23645', 'SL');
+            guide(data.risk.tp1, '#089981', 'TP1');
+        }
+
+        view.forEach((cd, i) => {
+            let x = i * space + (space - cw)/2;
+            let isBull = cd.c >= cd.o;
+            ctx.strokeStyle = isBull ? '#089981' : '#F23645';
+            ctx.beginPath(); ctx.moveTo(x + cw/2, getY(cd.h)); ctx.lineTo(x + cw/2, getY(cd.l)); ctx.stroke();
+            ctx.fillStyle = isBull ? '#089981' : '#F23645';
+            let yO = getY(cd.o), yC = getY(cd.c);
+            ctx.fillRect(x, Math.min(yO, yC), cw, Math.max(Math.abs(yO - yC), 1));
+        });
+
+        let lastC = view[view.length-1];
+        let ly = getY(lastC.c);
+        ctx.strokeStyle = '#FFF'; ctx.setLineDash([2, 4]);
+        ctx.beginPath(); ctx.moveTo(0, ly); ctx.lineTo(w, ly); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#2A2E39'; ctx.fillRect(w - 62, ly - 10, 62, 20);
+        ctx.fillStyle = '#FFF'; ctx.font = '10px JetBrains Mono'; ctx.fillText(UTILS.fmt(lastC.c), w - 57, ly + 4);
+    }
+};
+
+/* ==========================================================================
+   TELEGRAM ALERTS — sends signal alerts (and optionally a real chart
+   screenshot rendered off-screen) directly from the browser to the Telegram
+   Bot API. Token/chat id live only in the two input fields above; nothing is
+   persisted or sent anywhere except https://api.telegram.org.
+   ========================================================================== */
+const TELEGRAM = {
+    creds: () => ({
+        token: (document.getElementById('tgToken')?.value || '').trim(),
+        chatId: (document.getElementById('tgChatId')?.value || '').trim()
+    }),
+
+    send: async (text) => {
+        const { token, chatId } = TELEGRAM.creds();
+        if(!token || !chatId) return { ok: false, error: 'Missing bot token or chat ID.' };
+        try {
+            const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' })
+            });
+            const j = await r.json();
+            return j.ok ? { ok: true } : { ok: false, error: j.description || 'Telegram API error' };
+        } catch(e) { return { ok: false, error: e.message || String(e) }; }
+    },
+
+    sendPhoto: async (canvas, caption) => {
+        const { token, chatId } = TELEGRAM.creds();
+        if(!token || !chatId) return { ok: false, error: 'Missing bot token or chat ID.' };
+        return new Promise((resolve) => {
+            canvas.toBlob(async (blob) => {
+                if(!blob) { resolve({ ok: false, error: 'Could not render chart.' }); return; }
+                const form = new FormData();
+                form.append('chat_id', chatId);
+                form.append('caption', caption);
+                form.append('parse_mode', 'HTML');
+                form.append('photo', blob, 'chart.png');
+                try {
+                    const r = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: form });
+                    const j = await r.json();
+                    resolve(j.ok ? { ok: true } : { ok: false, error: j.description || 'Telegram API error' });
+                } catch(e) { resolve({ ok: false, error: e.message || String(e) }); }
+            }, 'image/png');
+        });
+    },
+
+    caption: (sym, dir, d) => {
+        const grade = d.prob ? d.prob.grade : '--';
+        const conf = d.prob ? d.prob.confidence + '%' : '--';
+        const lines = [
+            `<b>${dir} ${sym}</b>  (Score ${d.sc} · Grade ${grade} · Conf ${conf})`,
+            d.regime ? `Regime: ${d.regime.display}` : '',
+            `Entry: ${UTILS.fmt(d.risk.ent)}`,
+            `SL: ${UTILS.fmt(d.risk.sl)}`,
+            `TP1: ${UTILS.fmt(d.risk.tp1)} / TP2: ${UTILS.fmt(d.risk.tp2)}`,
+            `Reasons: ${d.tags.slice(0, 5).join(', ')}`,
+            new Date().toISOString()
+        ];
+        return lines.filter(Boolean).join('\n');
+    },
+
+    // Called from runScan whenever a symbol NEWLY becomes LONG/SHORT
+    sendSignal: async (sym, dir, d) => {
+        const caption = TELEGRAM.caption(sym, dir, d);
+        const wantsScreenshot = document.getElementById('chkTgScreenshot')?.checked;
+        if(wantsScreenshot){
+            const off = document.createElement('canvas');
+            off.width = 900; off.height = 500;
+            CHART.render(sym, null, off);
+            const result = await TELEGRAM.sendPhoto(off, caption);
+            if(!result.ok) console.warn('Telegram screenshot alert failed:', result.error);
+        } else {
+            const result = await TELEGRAM.send(caption);
+            if(!result.ok) console.warn('Telegram alert failed:', result.error);
+        }
+    }
+};
+
+document.getElementById('btnTgTest').addEventListener('click', async () => {
+    const btn = document.getElementById('btnTgTest');
+    btn.disabled = true; btn.innerText = 'Sending...';
+    const result = await TELEGRAM.send('✅ ProQuant Terminal — test alert. Telegram integration is working.');
+    btn.disabled = false;
+    btn.innerText = result.ok ? 'Sent ✓' : `Failed: ${result.error}`;
+    setTimeout(() => { btn.innerText = 'Send Test Alert'; }, 3000);
+});
+
+/* ==========================================================================
+   BACKTEST LAB — causal, bar-by-bar replay (no lookahead). At each closed
+   entry candle we only use candles up to that point (and the matching
+   closed bias/struct candles as-of that timestamp) to decide, then walk
+   forward candle-by-candle to see whether SL/TP1/TP2 was hit first.
+   ========================================================================== */
+const BACKTEST = {
+    simulateTrade: (candles, startIdx, dir, risk) => {
+        let half = false, partial = 0;
+        for(let j = startIdx; j < candles.length; j++){
+            let cd = candles[j];
+            if(dir === 'LONG'){
+                if(!half && cd.l <= risk.sl) return { r: -1, exitIdx: j, reason: 'SL' };
+                if(!half && cd.h >= risk.tp1){
+                    half = true; partial = 0.5 * CONFIG.rr1;
+                    if(cd.h >= risk.tp2) return { r: partial + 0.5*CONFIG.rr2, exitIdx: j, reason: 'TP1+TP2' };
+                    continue;
+                }
+                if(half){
+                    if(cd.l <= risk.ent) return { r: partial, exitIdx: j, reason: 'BE after TP1' };
+                    if(cd.h >= risk.tp2) return { r: partial + 0.5*CONFIG.rr2, exitIdx: j, reason: 'TP2' };
+                }
+            } else {
+                if(!half && cd.h >= risk.sl) return { r: -1, exitIdx: j, reason: 'SL' };
+                if(!half && cd.l <= risk.tp1){
+                    half = true; partial = 0.5 * CONFIG.rr1;
+                    if(cd.l <= risk.tp2) return { r: partial + 0.5*CONFIG.rr2, exitIdx: j, reason: 'TP1+TP2' };
+                    continue;
+                }
+                if(half){
+                    if(cd.h >= risk.ent) return { r: partial, exitIdx: j, reason: 'BE after TP1' };
+                    if(cd.l <= risk.tp2) return { r: partial + 0.5*CONFIG.rr2, exitIdx: j, reason: 'TP2' };
+                }
+            }
+        }
+        return { r: half ? partial : 0, exitIdx: candles.length - 1, reason: 'Timeout/Open' };
+    },
+
+    run: async (symbol, entryTf, lookback) => {
+        const statusEl = document.getElementById('btStatus');
+        const btnEl = document.getElementById('btnRunBacktest');
+        btnEl.disabled = true; statusEl.innerText = 'Fetching historical data...';
+
+        const tfMinutes = { '1m':1, '5m':5, '15m':15 };
+        let entryMin = tfMinutes[entryTf];
+        let spanMin = entryMin * lookback;
+        let structLimit = Math.min(1500, Math.ceil(spanMin / 15) + 60);
+        let biasLimit = Math.min(1500, Math.ceil(spanMin / 240) + 30);
+
+        let entryCandles = await API.klines(symbol, entryTf, Math.min(1500, lookback));
+        let structCandles = await API.klines(symbol, CONFIG.structTf, structLimit);
+        let biasCandles = await API.klines(symbol, CONFIG.biasTf, biasLimit);
+
+        if(!entryCandles || !structCandles || !biasCandles){
+            let missing = [!entryCandles && entryTf, !structCandles && CONFIG.structTf, !biasCandles && CONFIG.biasTf].filter(Boolean).join('/');
+            let reason = STATE.scanErrors[symbol] || 'network error';
+            statusEl.innerText = `Fetch failed for ${symbol} (${missing}): ${reason}. Check connection and retry.`;
+            statusEl.style.color = 'var(--bear)';
+            btnEl.disabled = false; return;
+        }
+        if(entryCandles.length < 130){
+            statusEl.innerText = `Only ${entryCandles.length} candles returned, need 130+. Try a larger lookback.`;
+            statusEl.style.color = 'var(--bear)';
+            btnEl.disabled = false; return;
+        }
+        statusEl.style.color = 'var(--text-muted)';
+
+        statusEl.innerText = 'Simulating...';
+        await UTILS.sleep(30); // let UI paint before the (synchronous) loop below
+
+        let trades = [];
+        let i = 110; // warmup so analyze() has enough lookback for swings/FVG/OB
+        let consecLoss = 0, cooldownUntil = -1, skippedByBreaker = 0;
+        const F = CONFIG.filters;
+        while(i < entryCandles.length - 1){
+            let ts = entryCandles[i].time;
+            let structSlice = structCandles.filter(c => c.time <= ts);
+            let biasSlice = biasCandles.filter(c => c.time <= ts);
+            if(structSlice.length < 20 || biasSlice.length < 20){ i++; continue; }
+
+            // Circuit breaker: after N consecutive losses, stand aside for a cooldown window
+            // instead of immediately re-entering — this is a risk-management guard, not an
+            // alpha signal, and it's what most blown scalping accounts are actually missing.
+            if(F.circuitBreaker && i < cooldownUntil){ skippedByBreaker++; i++; continue; }
+
+            let entrySlice = entryCandles.slice(0, i + 1); // fully closed, causal
+            let qBias = QUANT.analyze(biasSlice);
+            let qStruct = QUANT.analyze(structSlice);
+            let qEntry = QUANT.analyze(entrySlice);
+            let decisionPrice = entryCandles[i].c; // bar-close decision, no lookahead
+            let res = QUANT.evaluate(qBias, qStruct, qEntry, decisionPrice);
+
+            if(res.dir === 'LONG' || res.dir === 'SHORT'){
+                let outcome = BACKTEST.simulateTrade(entryCandles, i + 1, res.dir, res.risk);
+                trades.push({ time: ts, dir: res.dir, tags: res.tags, sc: res.sc, r: outcome.r, reason: outcome.reason, holdBars: Math.max(0, outcome.exitIdx - (i + 1)) });
+                if(F.circuitBreaker){
+                    if(outcome.r < 0){ consecLoss++; if(consecLoss >= F.maxConsecLoss){ cooldownUntil = outcome.exitIdx + F.cooldownBars; consecLoss = 0; } }
+                    else consecLoss = 0;
+                }
+                i = Math.max(outcome.exitIdx, i + 1); // don't overlap positions
+            } else {
+                i++;
+            }
+        }
+
+        BACKTEST.lastTrades = trades;
+        BACKTEST.renderResults(trades);
+        PROBABILITY.recordTrades(trades); // feed real outcomes into the Institutional Probability Engine's stats DB
+        let breakerNote = F.circuitBreaker && skippedByBreaker > 0 ? ` (circuit breaker skipped ${skippedByBreaker} bars)` : '';
+        statusEl.innerText = `Done — ${trades.length} trades over ${lookback} ${entryTf} candles.${breakerNote}`;
+        btnEl.disabled = false;
+        document.getElementById('btnMonteCarlo').disabled = trades.length < 10;
+    },
+
+    // Monte Carlo robustness check: reshuffle the realized R-multiples thousands of times to see
+    // how much of the equity curve's shape is order-dependent luck vs a persistent per-trade edge.
+    // This does NOT predict future trades — it only tells you how fragile *this* sample is.
+    monteCarlo: (trades, iterations = 2000) => {
+        const rs = trades.map(t => t.r);
+        const n = rs.length;
+        if(n < 10) return null;
+        let finals = [], maxDDs = [];
+        for(let k = 0; k < iterations; k++){
+            let arr = rs.slice();
+            for(let m = arr.length - 1; m > 0; m--){ const j = Math.floor(Math.random() * (m + 1)); [arr[m], arr[j]] = [arr[j], arr[m]]; }
+            let cum = 0, peak = 0, maxDD = 0;
+            for(const r of arr){ cum += r; if(cum > peak) peak = cum; maxDD = Math.max(maxDD, peak - cum); }
+            finals.push(cum); maxDDs.push(maxDD);
+        }
+        finals.sort((a,b)=>a-b); maxDDs.sort((a,b)=>a-b);
+        const pct = (arr, p) => arr[Math.min(arr.length-1, Math.floor(p * arr.length))];
+        const ruinCount = finals.filter(f => f <= -10).length; // arbitrary "-10R blown account" proxy
+        return {
+            n, iterations,
+            netR_p5: pct(finals, 0.05), netR_p50: pct(finals, 0.50), netR_p95: pct(finals, 0.95),
+            maxDD_p50: pct(maxDDs, 0.50), maxDD_p95: pct(maxDDs, 0.95),
+            ruinPct: (ruinCount / iterations * 100)
+        };
+    },
+
+    renderResults: (trades) => {
+        let total = trades.length;
+        let wins = trades.filter(t => t.r > 0).length;
+        let winRate = total ? (wins / total * 100) : 0;
+        let netR = trades.reduce((a,t) => a + t.r, 0);
+        let avgR = total ? netR / total : 0;
+        let grossWin = trades.filter(t => t.r > 0).reduce((a,t) => a + t.r, 0);
+        let grossLoss = Math.abs(trades.filter(t => t.r < 0).reduce((a,t) => a + t.r, 0));
+        let pf = grossLoss > 0 ? (grossWin / grossLoss) : (grossWin > 0 ? Infinity : 0);
+        let maxConsecLoss = 0, streak = 0;
+        trades.forEach(t => { if(t.r < 0){ streak++; maxConsecLoss = Math.max(maxConsecLoss, streak); } else streak = 0; });
+
+        document.getElementById('btTotal').innerText = total;
+        document.getElementById('btWinRate').innerText = winRate.toFixed(1) + '%';
+        document.getElementById('btWinRate').style.color = winRate >= 45 ? 'var(--bull)' : 'var(--bear)';
+        document.getElementById('btAvgR').innerText = avgR.toFixed(2) + 'R';
+        document.getElementById('btAvgR').style.color = avgR >= 0 ? 'var(--bull)' : 'var(--bear)';
+        document.getElementById('btPF').innerText = pf === Infinity ? '∞' : pf.toFixed(2);
+        document.getElementById('btNetR').innerText = (netR>=0?'+':'') + netR.toFixed(2) + 'R';
+        document.getElementById('btNetR').style.color = netR >= 0 ? 'var(--bull)' : 'var(--bear)';
+        document.getElementById('btMaxLoss').innerText = maxConsecLoss;
+
+        // Equity curve
+        let c = document.getElementById('equityChart');
+        c.width = c.parentElement.clientWidth; c.height = c.parentElement.clientHeight;
+        let ctx = c.getContext('2d');
+        ctx.clearRect(0,0,c.width,c.height);
+        if(total > 0){
+            let cum = 0, pts = [0];
+            trades.forEach(t => { cum += t.r; pts.push(cum); });
+            let minV = Math.min(...pts), maxV = Math.max(...pts);
+            let range = (maxV - minV) || 1;
+            let padT=20, padB=20, h=c.height-padT-padB, w=c.width;
+            const getX = i => (i/(pts.length-1)) * w;
+            const getY = v => padT + h - ((v-minV)/range)*h;
+            ctx.strokeStyle = '#2D364A'; ctx.setLineDash([2,4]);
+            ctx.beginPath(); ctx.moveTo(0, getY(0)); ctx.lineTo(w, getY(0)); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.strokeStyle = netR >= 0 ? '#089981' : '#F23645'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); pts.forEach((v,i) => i===0 ? ctx.moveTo(getX(i),getY(v)) : ctx.lineTo(getX(i),getY(v))); ctx.stroke();
+            ctx.lineWidth = 1;
+        }
+
+        // Trade log
+        let html = trades.slice().reverse().slice(0, 60).map(t => `
+            <tr>
+                <td class="mono" style="font-size:9.5px; color:var(--text-muted);">${new Date(t.time).toISOString().substr(5,11).replace('T',' ')}</td>
+                <td><span class="badge ${t.dir==='LONG'?'bg-bull':'bg-bear'}" style="font-size:9px; padding:2px 6px;">${t.dir}</span></td>
+                <td style="font-size:9.5px; color:var(--text-muted);">${t.tags.join(', ')}</td>
+                <td class="mono" style="font-weight:700; color:${t.r>0?'var(--bull)':'var(--bear)'}">${t.r>=0?'+':''}${t.r.toFixed(2)}R</td>
+            </tr>`).join('');
+        document.getElementById('btLogBody').innerHTML = html || '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">No trades triggered in this window.</td></tr>';
+    }
+};
+
+/* ==========================================================================
+   APP CONTROLLER
+   ========================================================================== */
+const scanOneSymbol = async (s) => {
+    let [cBiasRaw, cStructRaw, cEntryRaw, oiNow] = await Promise.all([
+        API.klines(s, CONFIG.biasTf), API.klines(s, CONFIG.structTf), API.klines(s, CONFIG.entryTf),
+        API.openInterest(s).catch(() => null)
+    ]);
+    if(cBiasRaw && cStructRaw && cEntryRaw && cEntryRaw.length > 1) {
+        // Drop the last (still-forming) candle from structure detection to prevent repainting;
+        // use its close as the live decision price instead.
+        let livePrice = cEntryRaw[cEntryRaw.length - 1].c;
+        let qBias = QUANT.analyze(cBiasRaw.slice(0, -1));
+        let qStruct = QUANT.analyze(cStructRaw.slice(0, -1));
+        let qEntry = QUANT.analyze(cEntryRaw.slice(0, -1));
+
+        // Snapshot OI trend vs the previous scan BEFORE evaluate() reads STATE.openInterestNow,
+        // so the OI-confirmation confluence strategy has a real delta to compare against.
+        if(STATE.openInterestNow === undefined) STATE.openInterestNow = {};
+        if(oiNow !== null){
+            STATE.prevOI[s] = STATE.openInterestNow[s] !== undefined ? STATE.openInterestNow[s] : oiNow;
+            STATE.openInterestNow[s] = oiNow;
+        }
+
+        let res = QUANT.evaluate(qBias, qStruct, qEntry, livePrice, s);
+        res.regime = REGIME.classify(qBias);
+        res.oi = oiNow;
+        res.prob = PROBABILITY.assess(res);
+        return res;
+    }
+    return null;
+};
+
+const runScan = async () => {
+    if(STATE.isScanning) return;
+    STATE.isScanning = true;
+
+    document.getElementById('btnScan').disabled = true;
+    document.getElementById('btnScan').innerText = 'EXECUTING ALGORITHM...';
+    document.getElementById('feedStatus').innerText = '● SCANNING';
+    STATE.scanErrors = {};
+    STATE.lastFailedSymbols = [];
+
+    STATE.funding = await API.fundingAll();
+
+    let aplus = 0, done = 0;
+    let currentAplus = new Set();
+
+    // Fetch in small concurrent batches instead of one-symbol-at-a-time: faster overall, and a
+    // slow/failed symbol no longer stalls the whole queue behind a fixed sleep().
+    const batchSize = CONFIG.scanConcurrency;
+    for(let bStart = 0; bStart < CONFIG.symbols.length; bStart += batchSize){
+        let batch = CONFIG.symbols.slice(bStart, bStart + batchSize);
+        let outcomes = await Promise.all(batch.map(s => scanOneSymbol(s).then(res => ({ s, res }))));
+        outcomes.forEach(({ s, res }) => {
+            done++;
+            if(res){
+                STATE.results[s] = res;
+                if(res.sc >= 85){ aplus++; currentAplus.add(s); if(!STATE.prevAplus.has(s)) UTILS.beep(980, 0.15); }
+
+                // Auto-scan → auto-signal broadcast: fire only when a symbol NEWLY becomes
+                // LONG/SHORT (wasn't already flagged on the previous pass), so it doesn't spam
+                // the same live setup every 60s.
+                const wasSignal = STATE.prevSignalDir[s] === 'LONG' || STATE.prevSignalDir[s] === 'SHORT';
+                if((res.dir === 'LONG' || res.dir === 'SHORT') && !wasSignal){
+                    if(document.getElementById('chkNotifySignals').checked){
+                        UTILS.beep(res.dir === 'LONG' ? 880 : 660, 0.15);
+                        TOAST.show(s, res.dir, res);
+                        if(document.getElementById('chkBrowserNotif').checked) TOAST.notify(s, res.dir, res);
+                    }
+                    if(document.getElementById('chkAutoJournal').checked) JOURNAL.add(s);
+                    if(document.getElementById('chkTelegram').checked) TELEGRAM.sendSignal(s, res.dir, res);
+                }
+                STATE.prevSignalDir[s] = res.dir;
+            } else {
+                STATE.lastFailedSymbols.push(s);
+            }
+        });
+        document.getElementById('scanPercent').innerText = `${Math.round((done/CONFIG.symbols.length)*100)}%`;
+        document.getElementById('statTotal').innerText = Object.keys(STATE.results).length;
+        document.getElementById('statAPlus').innerText = aplus;
+    }
+    STATE.prevAplus = currentAplus;
+
+    document.getElementById('scanPercent').innerText = '100%';
+    document.getElementById('btnScan').disabled = false;
+    document.getElementById('btnScan').innerText = 'RUN MTF SCANNER';
+    document.getElementById('feedStatus').innerText = '● FUTURES REST';
+
+    // Surface failures instead of hiding them — this is the fix for symbols silently vanishing.
+    let statusEl = document.getElementById('scanStatus');
+    if(STATE.lastFailedSymbols.length){
+        let reasons = [...new Set(STATE.lastFailedSymbols.map(s => STATE.scanErrors[s] || 'unknown'))];
+        statusEl.innerText = `⚠ ${STATE.lastFailedSymbols.length} symbol(s) failed (${reasons.join(', ')}) — click Scan to retry`;
+        statusEl.style.color = 'var(--warn)';
+    } else {
+        statusEl.innerText = 'Standby'; statusEl.style.color = 'var(--text-muted)';
+    }
+
+    STATE.isScanning = false;
+    UI.renderTable();
+    RANKING.render();
+
+    if(!STATE.activeSymbol && CONFIG.symbols.length > 0) {
+        let firstSym = Object.keys(STATE.results)[0];
+        if(firstSym) UI.loadTerminal(firstSym);
+    } else if(STATE.activeSymbol && STATE.results[STATE.activeSymbol]) {
+        OMS.updateTicket(STATE.activeSymbol, STATE.results[STATE.activeSymbol]);
+        SESSION_STATS.render(STATE.activeSymbol);
+    }
+};
+
+document.getElementById('btnScan').addEventListener('click', runScan);
+document.getElementById('tabScreener').addEventListener('click', () => UI.switchTab('tabScreener'));
+document.getElementById('tabTerminal').addEventListener('click', () => UI.switchTab('tabTerminal'));
+document.getElementById('tabBacktest').addEventListener('click', () => UI.switchTab('tabBacktest'));
+document.getElementById('tabJournal').addEventListener('click', () => UI.switchTab('tabJournal'));
+document.getElementById('tabRankings').addEventListener('click', () => { UI.switchTab('tabRankings'); RANKING.render(); });
+
+/* ==========================================================================
+   LAYOUT — resizable side-pane (drag handle, persisted) + Focus Mode
+   (collapses the side-pane for a full-width chart). Also re-renders the
+   chart on window resize since canvas dimensions are read from layout.
+   ========================================================================== */
+(() => {
+    const sidePane = document.getElementById('sidePane');
+    const resizer = document.getElementById('paneResizer');
+    const WIDTH_KEY = 'pq_sidepane_width';
+
+    const savedWidth = parseInt(localStorage.getItem(WIDTH_KEY), 10);
+    if(savedWidth && savedWidth >= 260 && savedWidth <= 560) sidePane.style.width = savedWidth + 'px';
+
+    let dragging = false;
+    resizer.addEventListener('mousedown', (e) => {
+        dragging = true;
+        resizer.classList.add('dragging');
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if(!dragging) return;
+        const layoutRect = document.querySelector('.exec-layout').getBoundingClientRect();
+        let newWidth = Math.round(layoutRect.right - e.clientX);
+        newWidth = Math.max(260, Math.min(560, newWidth));
+        sidePane.style.width = newWidth + 'px';
+    });
+    window.addEventListener('mouseup', () => {
+        if(!dragging) return;
+        dragging = false;
+        resizer.classList.remove('dragging');
+        document.body.style.userSelect = '';
+        try { localStorage.setItem(WIDTH_KEY, parseInt(sidePane.style.width, 10)); } catch(e) {}
+        if(STATE.activeSymbol) CHART.render(STATE.activeSymbol);
+    });
+
+    document.getElementById('btnFocusMode').addEventListener('click', (e) => {
+        const collapsed = sidePane.classList.toggle('collapsed');
+        resizer.classList.toggle('hidden-resizer', collapsed);
+        e.target.innerText = collapsed ? '⛶ Exit Focus' : '⛶ Focus';
+        setTimeout(() => { if(STATE.activeSymbol) CHART.render(STATE.activeSymbol); }, 260); // wait for the width transition to finish
+    });
+
+    // Debounced chart re-render on window resize so the canvas always matches its container
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => { if(STATE.activeSymbol) CHART.render(STATE.activeSymbol); }, 150);
+    });
+})();
+document.getElementById('btnRefreshRankings').addEventListener('click', () => RANKING.render());
+
+// Populate backtest symbol dropdown
+(() => {
+    let sel = document.getElementById('btSymbol');
+    sel.innerHTML = CONFIG.symbols.map(s => `<option value="${s}">${s}</option>`).join('');
+})();
+
+// Tuning sliders — live-update CONFIG, applied on the next scan/backtest run
+document.getElementById('sldThreshold').addEventListener('input', (e) => {
+    CONFIG.scoreThreshold = +e.target.value;
+    document.getElementById('valThreshold').innerText = e.target.value;
+});
+document.getElementById('sldObBuf').addEventListener('input', (e) => {
+    CONFIG.obBufferAtrMult = +e.target.value;
+    document.getElementById('valObBuf').innerText = (+e.target.value).toFixed(2);
+});
+document.getElementById('sldSlFallback').addEventListener('input', (e) => {
+    CONFIG.slAtrMultFallback = +e.target.value;
+    document.getElementById('valSlFallback').innerText = (+e.target.value).toFixed(2);
+});
+
+document.getElementById('chkVolatility').addEventListener('change', e => CONFIG.filters.volatility = e.target.checked);
+document.getElementById('chkVolume').addEventListener('change', e => CONFIG.filters.volumeConfirm = e.target.checked);
+document.getElementById('chkSession').addEventListener('change', e => CONFIG.filters.sessionGate = e.target.checked);
+document.getElementById('chkBreaker').addEventListener('change', e => CONFIG.filters.circuitBreaker = e.target.checked);
+
+// ---- Institutional Confluence Strategies: build checklist UI from CONFIG.strategies ----
+(() => {
+    const list = document.getElementById('strategyList');
+    list.innerHTML = Object.entries(CONFIG.strategies).map(([key, s]) => `
+        <div class="strat-item" id="strat_${key}">
+            <div class="strat-item-head" onclick="document.getElementById('strat_${key}').classList.toggle('open')">
+                <span class="name">${s.label} <span class="strat-badge">+${s.weight}</span></span>
+                <input type="checkbox" data-strat="${key}" ${s.enabled ? 'checked' : ''} onclick="event.stopPropagation()">
+            </div>
+            <div class="strat-desc">${s.reason}</div>
+        </div>`).join('');
+    list.querySelectorAll('input[data-strat]').forEach(chk => {
+        chk.addEventListener('change', e => {
+            CONFIG.strategies[e.target.dataset.strat].enabled = e.target.checked;
+        });
+    });
+})();
+
+// ---- Trading Journal controls ----
+document.getElementById('btnAddJournal').addEventListener('click', () => JOURNAL.add(STATE.activeSymbol));
+document.getElementById('btnRegenReasons').addEventListener('click', () => JOURNAL.regenerate());
+document.getElementById('btnExportJournal').addEventListener('click', () => JOURNAL.exportCSV());
+document.getElementById('btnClearJournal').addEventListener('click', () => JOURNAL.clear());
+JOURNAL.render();
+
+// ---- Browser push notifications for new signals: ask permission only when the user opts in ----
+document.getElementById('chkBrowserNotif').addEventListener('change', (e) => {
+    if(e.target.checked && 'Notification' in window && Notification.permission === 'default'){
+        Notification.requestPermission().then(perm => { if(perm !== 'granted') e.target.checked = false; });
+    }
+});
+
+document.getElementById('btnRunBacktest').addEventListener('click', () => {
+    let sym = document.getElementById('btSymbol').value || STATE.activeSymbol || CONFIG.symbols[0];
+    let tf = document.getElementById('btTf').value;
+    let lookback = +document.getElementById('btLookback').value;
+    document.getElementById('mcPanel').style.display = 'none';
+    BACKTEST.run(sym, tf, lookback);
+});
+
+document.getElementById('btnClearProbDb').addEventListener('click', () => {
+    if(!confirm('Clear the Institutional Probability Engine\'s win-rate history? This cannot be undone.')) return;
+    PROBABILITY.clearDB();
+    if(STATE.activeSymbol && STATE.results[STATE.activeSymbol]){
+        STATE.results[STATE.activeSymbol].prob = PROBABILITY.assess(STATE.results[STATE.activeSymbol]);
+        OMS.updateTicket(STATE.activeSymbol, STATE.results[STATE.activeSymbol]);
+    }
+});
+
+document.getElementById('btnMonteCarlo').addEventListener('click', () => {
+    const trades = BACKTEST.lastTrades || [];
+    const mc = BACKTEST.monteCarlo(trades);
+    const panel = document.getElementById('mcPanel');
+    if(!mc){ panel.style.display='none'; return; }
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <b style="color:#FFF;">Monte Carlo (${mc.iterations.toLocaleString()} reshuffles of ${mc.n} realized trades)</b><br>
+      Net R — 5th pct: <span style="color:${mc.netR_p5>=0?'var(--bull)':'var(--bear)'}">${mc.netR_p5.toFixed(1)}R</span>
+      &nbsp;median: <span style="color:${mc.netR_p50>=0?'var(--bull)':'var(--bear)'}">${mc.netR_p50.toFixed(1)}R</span>
+      &nbsp;95th pct: <span style="color:${mc.netR_p95>=0?'var(--bull)':'var(--bear)'}">${mc.netR_p95.toFixed(1)}R</span><br>
+      Max Drawdown — median: <span style="color:var(--warn)">${mc.maxDD_p50.toFixed(1)}R</span>
+      &nbsp;95th pct (bad case): <span style="color:var(--bear)">${mc.maxDD_p95.toFixed(1)}R</span><br>
+      Simulated "ruin" (&le;-10R) rate: <span style="color:${mc.ruinPct>10?'var(--bear)':'var(--text-main)'}">${mc.ruinPct.toFixed(1)}%</span><br>
+      <span style="color:var(--text-faint); font-size:10px;">This reorders your actual trade outcomes randomly — it shows how order-dependent the equity curve is, not a forecast. A small trade sample (&lt;50) means wide, low-confidence bands regardless of what's shown here.</span>`;
+});
+
+let autoInterval = null;
+document.getElementById('btnAuto').addEventListener('click', (e) => {
+    STATE.auto = !STATE.auto;
+    e.target.classList.toggle('active', STATE.auto);
+    if(STATE.auto) { runScan(); autoInterval = setInterval(runScan, 60000); }
+    else { clearInterval(autoInterval); }
+});
+
+// Entry timeframe toggle (drives the whole scan's execution TF)
+document.getElementById('entryTfToggle').addEventListener('click', (e) => {
+    let opt = e.target.closest('.toggle-opt'); if(!opt) return;
+    document.querySelectorAll('#entryTfToggle .toggle-opt').forEach(o=>o.classList.remove('active'));
+    opt.classList.add('active');
+    CONFIG.entryTf = opt.dataset.tf;
+});
+
+// Chart display timeframe toggle (drives the live WS kline stream shown)
+document.getElementById('chartTfToggle').addEventListener('click', (e) => {
+    let opt = e.target.closest('.toggle-opt'); if(!opt) return;
+    document.querySelectorAll('#chartTfToggle .toggle-opt').forEach(o=>o.classList.remove('active'));
+    opt.classList.add('active');
+    STATE.chartTf = opt.dataset.tf;
+    if(STATE.activeSymbol){
+        document.getElementById('chartTitle').innerText = `${STATE.activeSymbol} Execution Chart (Live ${STATE.chartTf.toUpperCase()})`;
+        WS.connectKline(STATE.activeSymbol, STATE.chartTf);
+    }
+});
+
+// Hotkeys
+document.addEventListener('keydown', (e) => {
+    if(e.target.tagName === 'INPUT') return;
+    if(e.key === 's' || e.key === 'S') runScan();
+    if(e.key === 'a' || e.key === 'A') document.getElementById('btnAuto').click();
+    if(e.key === '1') UI.switchTab('tabScreener');
+    if(e.key === '2') UI.switchTab('tabTerminal');
+    if(e.key === '3') UI.switchTab('tabJournal');
+});
+
+setInterval(SESSION.update, 1000);
+SESSION.update();
+
+window.addEventListener('resize', () => {
+    if(STATE.activeSymbol && document.getElementById('viewTerminal').classList.contains('active')) {
+        CHART.render(STATE.activeSymbol);
+    }
+});
+</script>
+</body>
+</html>
